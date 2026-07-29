@@ -1,0 +1,57 @@
+/* ============================================================
+   scada.css
+   Tailwind 유틸리티 클래스만으로는 표현할 수 없는 커스텀 키프레임 애니메이션.
+   App.jsx 최상단에서 `import "./styles/scada.css";` 형태로 한 번만 불러온다.
+   ============================================================ */
+
+/* 위험(danger) 상태일 때 화면 전체 테두리가 빨갛게 점멸 */
+@keyframes scada-danger-blink {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 4px rgba(239, 68, 68, 1);
+  }
+  50% {
+    box-shadow: inset 0 0 0 4px rgba(239, 68, 68, 0.15);
+  }
+}
+
+/* 상태 표시등(dot)이나 Risk Score 게이지가 위험 수준일 때 깜빡이는 효과 */
+@keyframes scada-pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* 탭 전환 시 부드러운 페이드 인 */
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 설비 구조도(SVG)에서 정상/주의/경고 구간의 유체 흐름을 표현하는 대시 이동 애니메이션 */
+@keyframes flowDash {
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+
+/* 설비 구조도에서 위험(레벨3) 구간만 별도로 점멸시키는 애니메이션 */
+@keyframes diagramBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
