@@ -35,7 +35,7 @@ export default function RiskTab({ riskScore, bucket, predictions, topPrediction,
         {/* 최근 10개 포인트 선형회귀 기울기 기반 추정치이므로 데이터가 짧을수록 오차가 커질 수 있음(참고용) */}
         <div className="flex flex-col gap-1.5">
           {predictions.map((p) => (
-            <div key={p.key} className="flex items-center justify-between text-xs font-mono px-2 py-1.5 rounded" style={{ background: "#0a1223" }}>
+            <div key={p.key} className="flex items-center justify-between text-xs font-mono px-2 py-1.5 rounded" style={{ background: "#f1f5f9" }}>
               <span style={{ color: COLORS.textDim }}>{SENSOR_LABELS[p.key]}</span>
               <span style={{ color: p.fault ? COLORS.fault : p.minutes === Infinity ? COLORS.normal : p.minutes <= 5 ? COLORS.danger : COLORS.caution }}>
                 {p.fault ? "SENSOR FAULT · 예측 제외" : p.minutes === Infinity ? "추세 없음 · 안전" : `약 ${Math.max(0, Math.round(p.minutes))}분 후`}
@@ -57,7 +57,7 @@ export default function RiskTab({ riskScore, bucket, predictions, topPrediction,
               <span className="text-xs font-mono w-16 flex-shrink-0" style={{ color: COLORS.textDim }}>
                 {SENSOR_LABELS[key]}
               </span>
-              <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: "#0a1223" }}>
+              <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: "#f1f5f9" }}>
                 <div
                   className="h-full rounded-full"
                   style={{ width: isFault ? "100%" : `${((level + 1) / 4) * 100}%`, background: isFault ? COLORS.fault : meta.color, transition: "width 0.4s ease" }}

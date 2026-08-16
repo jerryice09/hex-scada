@@ -8,8 +8,8 @@ export default function SopModal({ incident, onConfirm }) {
   if (!incident) return null;
   const sop = SOP_STEPS[incident.code] || { title: "비상 대응 SOP", steps: [] };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(2,6,16,0.78)", animation: "tabFadeIn 0.2s ease" }}>
-      <div className="w-full max-w-md rounded-xl p-5" style={{ background: COLORS.panel, border: `1px solid ${COLORS.danger}66`, boxShadow: "0 0 40px rgba(239,68,68,0.35)" }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.6)", animation: "tabFadeIn 0.2s ease" }}>
+      <div className="w-full max-w-md rounded-xl p-5" style={{ background: COLORS.panel, border: `1px solid ${COLORS.danger}66`, boxShadow: "0 20px 50px rgba(15,23,42,0.25), 0 0 0 1px rgba(220,38,38,0.15)" }}>
         <div className="flex items-center gap-2 mb-1">
           <AlertTriangle size={20} style={{ color: COLORS.danger }} />
           <h3 className="text-base font-bold" style={{ color: COLORS.danger }}>
@@ -29,7 +29,7 @@ export default function SopModal({ incident, onConfirm }) {
             </li>
           ))}
         </ol>
-        <button onClick={onConfirm} className="w-full py-2.5 rounded-md font-semibold text-sm flex items-center justify-center gap-2" style={{ background: COLORS.danger, color: "#1a0505" }}>
+        <button onClick={onConfirm} className="w-full py-2.5 rounded-md font-semibold text-sm flex items-center justify-center gap-2" style={{ background: COLORS.danger, color: "#ffffff" }}>
           <CheckCircle2 size={16} /> 확인 — 조치 완료
         </button>
       </div>

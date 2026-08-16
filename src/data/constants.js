@@ -4,28 +4,28 @@
 // (계산 로직은 src/utils/calculations.js 에 있음)
 // ============================================================
 
-// SCADA/HMI 산업 표준 색상 팔레트
+// SCADA/HMI 밝은 톤 팔레트 (산업 안전표지 색 언어 기준: 스틸블루/그린/오렌지/레드)
 export const COLORS = {
-  bg: "#080c17",
-  panel: "#0f1830",
-  panelBorder: "#1c2b4a",
-  panelBorderLit: "#2a4270",
-  textPrimary: "#dbe4f3",
-  textDim: "#5f7196",
-  cyan: "#2dd4ee",
-  normal: "#22c55e",
-  caution: "#eab308",
-  warning: "#f97316",
-  danger: "#ef4444",
-  fault: "#6b7280",
+  bg: "#f8fafc",
+  panel: "#ffffff",
+  panelBorder: "#e2e8f0",
+  panelBorderLit: "#cbd5e1",
+  textPrimary: "#0f172a",
+  textDim: "#64748b",
+  cyan: "#0ea5e9",
+  normal: "#16a34a",
+  caution: "#ca8a04",
+  warning: "#ea580c",
+  danger: "#dc2626",
+  fault: "#64748b",
 };
 
 // 상태 레벨(0~3) → 라벨/색상/발광 효과 매핑
 export const STATUS_META = {
-  0: { label: "정상", color: COLORS.normal, glow: "0 0 14px rgba(34,197,94,0.55)" },
-  1: { label: "주의", color: COLORS.caution, glow: "0 0 14px rgba(234,179,8,0.55)" },
-  2: { label: "경고", color: COLORS.warning, glow: "0 0 14px rgba(249,115,22,0.6)" },
-  3: { label: "위험", color: COLORS.danger, glow: "0 0 18px rgba(239,68,68,0.75)" },
+  0: { label: "정상", color: COLORS.normal, glow: "0 0 14px rgba(22,163,74,0.45)" },
+  1: { label: "주의", color: COLORS.caution, glow: "0 0 14px rgba(202,138,4,0.45)" },
+  2: { label: "경고", color: COLORS.warning, glow: "0 0 14px rgba(234,88,12,0.5)" },
+  3: { label: "위험", color: COLORS.danger, glow: "0 0 18px rgba(220,38,38,0.6)" },
 };
 
 export const UNITS = { inTemp: "℃", outTemp: "℃", inFlow: "L/min", outFlow: "L/min", pressure: "kPa", flame: "%" };

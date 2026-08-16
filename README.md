@@ -21,6 +21,7 @@
 |---|---|---|
 | [Recharts](https://recharts.org/) 2.12.7 | 온도·유량 추이 라인 차트 | MIT |
 | [lucide-react](https://lucide.dev/) 0.383.0 | UI 아이콘 세트 | ISC |
+| [three.js](https://threejs.org/) 0.160 | 설비 구조도 탭의 인터랙티브 3D 열교환기 뷰어 (STL 로드 + OrbitControls) | MIT |
 
 ### 외부 API · 클라우드 서비스
 | 이름 | 용도 | 비고 |
@@ -118,9 +119,9 @@ GitHub Actions가 자동으로 빌드 후 GitHub Pages에 배포합니다.
    **GitHub Actions**로 설정
 2. `main` 브랜치에 push (또는 저장소의 Actions 탭에서 워크플로를 수동 실행)
 3. 배포 완료 후 `https://<계정>.github.io/hex-scada/` 로 접속 가능
-4. ⚠️ 저장소 이름이 `hex-scada`가 아니라면 `vite.config.js`의
-   `base: "/hex-scada/"`를 실제 저장소 이름으로 바꿔야 화면이 정상적으로 뜹니다.
-   (Vercel/Netlify를 쓸 경우에는 이 base 값을 `"/"`로 되돌리면 됩니다.)
+4. ⚠️ `vite.config.js`의 기본값은 `base: "/"` (Vercel/Netlify용)입니다. GitHub Pages를 쓸 경우에는
+   `base: "/저장소명/"` (예: `"/hex-scada/"`)으로 **직접 바꿔야** 화면이 정상적으로 뜹니다.
+   (Vercel/Netlify로 배포할 때는 그대로 `"/"`를 유지하세요.)
 
 ## ESP32로 실시간 하드웨어 값 연동하기
 
@@ -190,6 +191,23 @@ ESP32(센서) --HTTPS POST(1초)--> /api/ingest --저장--> Redis(Upstash)
 | 점퍼케이블 20핀 세트 | 배선 연결 |
 | 실리콘 호스 / 스테인리스 / 테프론 테이프 | 배관 연결 및 누수 방지 (실습 배관 자재) |
 | 스카치 투명 양면 테이프 / 열수축 튜브 와이어 | 센서·배선 고정 및 절연 마감 |
+
+## 3D 설비 모델 (설비 구조도 탭)
+
+`설비 구조도` 탭은 추상적인 SVG 배관도 대신, 학생이 OpenSCAD로 실측 규격에 맞춰 직접
+모델링한 열교환기 3D 모델을 그대로 불러와서 보여줍니다. 신입 사원도 실물과 동일한 형태로
+입구·출구·벤트·드레인 위치를 익힐 수 있게 하기 위함입니다.
+
+- 원본 설계 파일: `hardware/3d/heat_exchanger.scad` (OpenSCAD)
+- 규격: 전장 555mm, 쉘 외경 114mm, 내부에 육각 피치로 배열된 튜브 다발(약 60개) 포함
+- 포트: IN(입구)·OUT(출구)·VENT(벤트)·DRAIN(드레인) 4곳에 실제 각인 라벨 태그 모델링
+- 웹에는 `public/models/heat_exchanger.stl`로 변환해서 로드하며, three.js `STLLoader` +
+  `OrbitControls`로 마우스 드래그 회전·휠 줌이 가능한 인터랙티브 3D 뷰로 렌더링합니다.
+- 각 포트 위치에는 실시간 센서 상태(정상/주의/경고/위험)에 따라 색이 바뀌는 핀을 표시하며,
+  위험 상태에서는 점멸 효과가 들어갑니다.
+
+`.scad` 파일을 수정한 뒤 새 STL을 만들려면 OpenSCAD에서 열어 F6(렌더링) 후
+File → Export → Export as STL로 내보내고, `public/models/heat_exchanger.stl`을 덮어쓰면 됩니다.
 
 ## 참고
 

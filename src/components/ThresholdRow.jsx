@@ -13,13 +13,13 @@ export default function ThresholdRow({ label, unit, keyName, draft, setDraftThre
   };
 
   return (
-    <div className="rounded-md p-3 flex flex-col gap-2" style={{ background: "#0a1223", border: `1px solid ${COLORS.panelBorder}` }}>
+    <div className="rounded-md p-3 flex flex-col gap-2" style={{ background: "#f8fafc", border: `1px solid ${COLORS.panelBorder}` }}>
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold" style={{ color: COLORS.textPrimary }}>
           {label} <span className="text-xs font-mono" style={{ color: COLORS.textDim }}>({unit})</span>
         </span>
         {/* 현재 적용 중인 기본값을 회색으로 표시 */}
-        <span className="text-[11px] font-mono" style={{ color: "#6b7280" }}>
+        <span className="text-[11px] font-mono" style={{ color: "#94a3b8" }}>
           기본값: {def.min} ~ {def.max}
           {unit}
         </span>
@@ -33,7 +33,7 @@ export default function ThresholdRow({ label, unit, keyName, draft, setDraftThre
           value={cur.min}
           onChange={(e) => update("min", e.target.value)}
           className="w-24 px-2 py-1.5 rounded text-sm font-mono"
-          style={{ background: COLORS.bg, border: `1px solid ${COLORS.panelBorderLit}`, color: COLORS.textPrimary }}
+          style={{ background: COLORS.panel, border: `1px solid ${COLORS.panelBorderLit}`, color: COLORS.textPrimary }}
         />
         <label className="text-[11px] font-mono" style={{ color: COLORS.textDim }}>
           상한
@@ -43,7 +43,7 @@ export default function ThresholdRow({ label, unit, keyName, draft, setDraftThre
           value={cur.max}
           onChange={(e) => update("max", e.target.value)}
           className="w-24 px-2 py-1.5 rounded text-sm font-mono"
-          style={{ background: COLORS.bg, border: `1px solid ${COLORS.panelBorderLit}`, color: COLORS.textPrimary }}
+          style={{ background: COLORS.panel, border: `1px solid ${COLORS.panelBorderLit}`, color: COLORS.textPrimary }}
         />
       </div>
     </div>

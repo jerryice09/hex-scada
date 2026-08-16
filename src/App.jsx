@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Activity, Wifi, WifiOff, Volume2, VolumeX } from "lucide-react";
+import { Activity, Wifi, WifiOff } from "lucide-react";
 import "./styles/scada.css";
-import { initAlertSound, playAlertSound } from "./utils/alertSound";
 
 import {
   COLORS,
@@ -70,18 +69,10 @@ export default function HeatExchangerSCADA() {
   const [sopQueue, setSopQueue] = useState([]);
   const [activeSop, setActiveSop] = useState(null);
 
-  // 경보 소리 음소거 토글 — 로컬 state로만 유지 (영속 저장 불필요)
-  const [soundMuted, setSoundMuted] = useState(false);
-  const soundMutedRef = useRef(soundMuted); // setInterval 클로저에서 최신 값을 읽기 위한 ref
-  useEffect(() => {
-    soundMutedRef.current = soundMuted;
-  }, [soundMuted]);
-
   const tickCounter = useRef(20);
   const transitionRef = useRef(null);
   const lastDangerCodes = useRef(new Set());
   const incidentSeq = useRef(0); // 사고 ID 순번 (Date.now() 충돌 가능성 제거)
-  const sopRepeatTimerRef = useRef(null); // 미확인 SOP 팝업 반복 알림용 interval
 
   // 센서 오류(SENSOR FAULT) 판정 — 물리적으로 불가능한 값이면 판단 로직에서 제외
   // isSensorFault는 thresholds를 함께 받아, 사용자가 설정 탭에서 범위를 넓혀도
@@ -101,15 +92,6 @@ export default function HeatExchangerSCADA() {
   const isDanger = status.level === 3;
   const riskScore = computeRiskScore(values, thresholds, faultMap);
   const bucket = riskBucket(riskScore);
-
-  // ------------------------------------------------------------
-  // 경고음 unlock 준비: 브라우저 자동재생 정책 때문에 사용자의 첫 클릭/터치/키 입력이
-  // 있기 전까지는 소리를 재생할 수 없다. 마운트 시 1회 리스너를 등록해두면
-  // 첫 상호작용 이후부터 playAlertSound()가 정상적으로 소리를 낸다.
-  // ------------------------------------------------------------
-  useEffect(() => {
-    initAlertSound();
-  }, []);
 
   // ------------------------------------------------------------
   // 시계 갱신 (1초마다)
@@ -242,8 +224,6 @@ export default function HeatExchangerSCADA() {
         // 큐에 넣을 때 우선순위(PRIORITY_ORDER)순으로 정렬해, 나중에 들어와도
         // 더 급한 사고(화염감지 등)의 SOP가 먼저 뜨도록 한다.
         setSopQueue((prev) => [...prev, { id, priority: PRIORITY_ORDER[m.code] }].sort((a, b) => a.priority - b.priority));
-        // 새로운 위험(danger) 등급 사고가 감지된 시점에 즉시 경고음 1회 재생
-        playAlertSound({ muted: soundMutedRef.current });
       }
     });
     lastDangerCodes.current = currentCodes;
@@ -264,31 +244,6 @@ export default function HeatExchangerSCADA() {
       setSopQueue((prev) => prev.slice(1));
     }
   }, [sopQueue, activeSop, incidents]);
-
-  // ------------------------------------------------------------
-  // SOP 팝업 알림음: 팝업이 열릴 때 1회 재생하고, 30초 이상 미확인 상태로
-  // 남아있으면 30초 간격으로 반복 재생해 운전자가 화면을 안 보고 있어도
-  // 알아챌 수 있게 한다. 팝업이 닫히면(confirmSop) 반복을 즉시 멈춘다.
-  // ------------------------------------------------------------
-  useEffect(() => {
-    if (sopRepeatTimerRef.current) {
-      clearInterval(sopRepeatTimerRef.current);
-      sopRepeatTimerRef.current = null;
-    }
-    if (!activeSop) return;
-
-    playAlertSound({ muted: soundMutedRef.current });
-    sopRepeatTimerRef.current = setInterval(() => {
-      playAlertSound({ muted: soundMutedRef.current });
-    }, 30000);
-
-    return () => {
-      if (sopRepeatTimerRef.current) {
-        clearInterval(sopRepeatTimerRef.current);
-        sopRepeatTimerRef.current = null;
-      }
-    };
-  }, [activeSop]);
 
   const confirmSop = useCallback(() => {
     if (!activeSop) return;
@@ -442,7 +397,7 @@ export default function HeatExchangerSCADA() {
       <header className="w-full sticky top-0 z-40" style={{ background: COLORS.panel, borderBottom: `1px solid ${COLORS.panelBorder}` }}>
         <div className="px-5 py-3 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded flex items-center justify-center" style={{ background: "#0a1730", border: `1px solid ${COLORS.panelBorderLit}` }}>
+            <div className="w-10 h-10 rounded flex items-center justify-center" style={{ background: "#eff6ff", border: `1px solid ${COLORS.panelBorderLit}` }}>
               <Activity size={20} style={{ color: COLORS.cyan }} />
             </div>
             <div>
@@ -472,21 +427,6 @@ export default function HeatExchangerSCADA() {
                 {hwOnline ? "ESP32 연결됨" : "ESP32 연결 끊김"}
               </div>
             )}
-
-            <button
-              onClick={() => setSoundMuted((v) => !v)}
-              title={soundMuted ? "경보음 켜기" : "경보음 끄기"}
-              aria-label={soundMuted ? "경보음 켜기" : "경보음 끄기"}
-              className="flex items-center gap-1.5 text-[11px] font-mono px-3 py-1.5 rounded-md"
-              style={{
-                border: `1px solid ${soundMuted ? COLORS.danger + "55" : COLORS.panelBorderLit}`,
-                color: soundMuted ? COLORS.danger : COLORS.textDim,
-                background: "transparent",
-              }}
-            >
-              {soundMuted ? <VolumeX size={12} /> : <Volume2 size={12} />}
-              {soundMuted ? "경보음 꺼짐" : "경보음 켜짐"}
-            </button>
 
             <div
               className="flex items-center gap-2 px-4 py-2 rounded-md"
@@ -521,7 +461,7 @@ export default function HeatExchangerSCADA() {
                 style={{
                   color: isActive ? COLORS.cyan : isRiskHot ? COLORS.danger : COLORS.textDim,
                   borderBottom: isActive ? `2px solid ${COLORS.cyan}` : "2px solid transparent",
-                  background: isActive ? "rgba(45,212,238,0.06)" : "transparent",
+                  background: isActive ? "rgba(14,165,233,0.08)" : "transparent",
                   fontWeight: isActive ? 600 : 500,
                 }}
               >
@@ -529,7 +469,7 @@ export default function HeatExchangerSCADA() {
                 <span>{tab.label}</span>
                 {isRiskHot && <span className="w-1.5 h-1.5 rounded-full" style={{ background: COLORS.danger }} />}
                 {badgeCount > 0 && (
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full" style={{ background: COLORS.danger, color: "#1a0505" }}>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full" style={{ background: COLORS.danger, color: "#ffffff" }}>
                     🔴{badgeCount}
                   </span>
                 )}
@@ -541,11 +481,11 @@ export default function HeatExchangerSCADA() {
 
       {/* 위험 시 원인 진단 배너 — 우선순위 정렬은 evaluateStatus에서 이미 처리됨 */}
       {isDanger && activeTab === "monitor" && (
-        <div className="w-full px-5 py-2.5 flex flex-col gap-1" style={{ background: "rgba(239,68,68,0.12)", borderBottom: `1px solid ${COLORS.danger}55` }}>
+        <div className="w-full px-5 py-2.5 flex flex-col gap-1" style={{ background: "rgba(220,38,38,0.08)", borderBottom: `1px solid ${COLORS.danger}55` }}>
           {status.dangerMessages.map((m, idx) => (
-            <div key={m.code} className="flex items-center gap-2 text-sm font-mono" style={{ color: "#fecaca" }}>
+            <div key={m.code} className="flex items-center gap-2 text-sm font-mono" style={{ color: "#991b1b" }}>
               {idx === 0 && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: COLORS.danger, color: "#1a0505" }}>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: COLORS.danger, color: "#ffffff" }}>
                   🚨 1순위 대응
                 </span>
               )}

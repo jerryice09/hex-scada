@@ -13,6 +13,15 @@ export default function MonitorTab({ values, paramLevel, faultMap, thresholds, h
 
   const sensorSub = (key) => `정상 ${thresholds[key].min}~${thresholds[key].max}${UNITS[key]}`;
 
+  // ④ x축 표시 개선: 내부적으로는 계속 증가하는 절대 tick 번호(경보 마커 매칭용으로 필요)를 쓰지만,
+  // 화면에는 "몇 초 전"인지 최신 포인트를 0으로 두고 상대 시간으로 환산해서 보여준다.
+  // (예전엔 절대 tick 번호가 그대로 찍혀서 224, 225 같은 의미 없는 숫자가 보였음)
+  const latestTick = history.length > 0 ? history[history.length - 1].t : 0;
+  const formatSecondsAgo = (t) => {
+    const diff = t - latestTick;
+    return diff === 0 ? "지금" : `${diff}초`;
+  };
+
   const renderAlarmReferenceLines = (keyPrefix) =>
     alarmMarks.map((m, i) => (
       <ReferenceLine
@@ -57,9 +66,9 @@ export default function MonitorTab({ values, paramLevel, faultMap, thresholds, h
           <ResponsiveContainer width="100%" height={170}>
             <LineChart data={history} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={COLORS.panelBorder} />
-              <XAxis dataKey="t" tick={{ fill: COLORS.textDim, fontSize: 10 }} stroke={COLORS.panelBorder} />
+              <XAxis dataKey="t" tickFormatter={formatSecondsAgo} tick={{ fill: COLORS.textDim, fontSize: 10 }} stroke={COLORS.panelBorder} minTickGap={20} />
               <YAxis tick={{ fill: COLORS.textDim, fontSize: 10 }} stroke={COLORS.panelBorder} domain={[0, 100]} />
-              <Tooltip contentStyle={{ background: "#0a1730", border: `1px solid ${COLORS.panelBorderLit}`, fontSize: 12 }} labelStyle={{ color: COLORS.textDim }} />
+              <Tooltip labelFormatter={formatSecondsAgo} contentStyle={{ background: "#ffffff", border: `1px solid ${COLORS.panelBorderLit}`, fontSize: 12, boxShadow: "0 4px 16px rgba(15,23,42,0.12)" }} labelStyle={{ color: COLORS.textDim }} />
               <Legend wrapperStyle={{ fontSize: 11, color: COLORS.textDim }} />
               {renderAlarmReferenceLines("t")}
               <Line type="monotone" dataKey="inTemp" name="입구 온도" stroke={COLORS.cyan} dot={false} strokeWidth={2} isAnimationActive={false} />
@@ -73,9 +82,9 @@ export default function MonitorTab({ values, paramLevel, faultMap, thresholds, h
           <ResponsiveContainer width="100%" height={170}>
             <LineChart data={history} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={COLORS.panelBorder} />
-              <XAxis dataKey="t" tick={{ fill: COLORS.textDim, fontSize: 10 }} stroke={COLORS.panelBorder} />
+              <XAxis dataKey="t" tickFormatter={formatSecondsAgo} tick={{ fill: COLORS.textDim, fontSize: 10 }} stroke={COLORS.panelBorder} minTickGap={20} />
               <YAxis tick={{ fill: COLORS.textDim, fontSize: 10 }} stroke={COLORS.panelBorder} domain={[0, 14]} />
-              <Tooltip contentStyle={{ background: "#0a1730", border: `1px solid ${COLORS.panelBorderLit}`, fontSize: 12 }} labelStyle={{ color: COLORS.textDim }} />
+              <Tooltip labelFormatter={formatSecondsAgo} contentStyle={{ background: "#ffffff", border: `1px solid ${COLORS.panelBorderLit}`, fontSize: 12, boxShadow: "0 4px 16px rgba(15,23,42,0.12)" }} labelStyle={{ color: COLORS.textDim }} />
               <Legend wrapperStyle={{ fontSize: 11, color: COLORS.textDim }} />
               {renderAlarmReferenceLines("f")}
               <Line type="monotone" dataKey="inFlow" name="입구 유량" stroke={COLORS.normal} dot={false} strokeWidth={2} isAnimationActive={false} />
@@ -90,7 +99,7 @@ export default function MonitorTab({ values, paramLevel, faultMap, thresholds, h
               <Power size={12} /> 시나리오 시뮬레이터 (심사 데모)
             </h2>
             {hwMode && (
-              <p className="text-xs font-mono px-3 py-2 rounded-md mb-2" style={{ background: "rgba(45,212,238,0.08)", color: COLORS.textDim, border: `1px solid ${COLORS.cyan}33` }}>
+              <p className="text-xs font-mono px-3 py-2 rounded-md mb-2" style={{ background: "rgba(14,165,233,0.08)", color: COLORS.textDim, border: `1px solid ${COLORS.cyan}33` }}>
                 실시간 하드웨어 연동 모드가 켜져 있어 시뮬레이터는 비활성화됩니다. ESP32가 보내는 실제 센서값이 표시됩니다.
               </p>
             )}
@@ -102,7 +111,7 @@ export default function MonitorTab({ values, paramLevel, faultMap, thresholds, h
                   disabled={isTransitioning || hwMode}
                   className="text-left px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors"
                   style={{
-                    background: activeScenario === key ? "#16213f" : "#0a1223",
+                    background: activeScenario === key ? "#eff6ff" : "#f8fafc",
                     border: `1px solid ${activeScenario === key ? COLORS.panelBorderLit : COLORS.panelBorder}`,
                     color: COLORS.textPrimary,
                     opacity: isTransitioning && activeScenario !== key ? 0.5 : 1,
@@ -135,8 +144,8 @@ export default function MonitorTab({ values, paramLevel, faultMap, thresholds, h
                 </p>
               )}
               {recentIncidents.map((entry) => (
-                <div key={entry.id} className="text-xs font-mono px-2.5 py-2 rounded" style={{ background: "rgba(239,68,68,0.08)", border: `1px solid ${COLORS.danger}33` }}>
-                  <span style={{ color: COLORS.textDim }}>[{entry.time}]</span> <span style={{ color: "#fecaca" }}>{entry.text}</span>
+                <div key={entry.id} className="text-xs font-mono px-2.5 py-2 rounded" style={{ background: "rgba(220,38,38,0.06)", border: `1px solid ${COLORS.danger}33` }}>
+                  <span style={{ color: COLORS.textDim }}>[{entry.time}]</span> <span style={{ color: "#991b1b" }}>{entry.text}</span>
                   {entry.resolved && (
                     <div className="mt-1" style={{ color: COLORS.normal }}>
                       ✅ {entry.resolvedTime} 조치 완료 확인됨

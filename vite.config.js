@@ -1,9 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// GitHub Pages로 배포할 경우, 저장소 이름이 "hex-scada"가 아니라면
-// base 값을 "/실제-저장소-이름/" 형태로 바꿔주세요. (예: base: "/hex-scada/")
-// Vercel/Netlify로 배포할 경우에는 base를 "/"로 두면 됩니다.
+// 기본값은 Vercel/Netlify처럼 도메인 루트에 배포하는 경우("/") 기준입니다.
+// GitHub Pages처럼 저장소 하위 경로(https://계정.github.io/저장소명/)에 배포할 때만
+// base를 "/저장소명/" 형태로 바꿔주세요. (예: base: "/hex-scada/")
 export default defineConfig({
   plugins: [react()],
   base: "/",

@@ -32,9 +32,9 @@ export default function HistoryTab({ incidents, unresolvedCount, resolvedCount, 
 
       <div className="flex flex-col gap-2.5">
         {incidents.map((entry) => (
-          <div key={entry.id} className="rounded-md p-3" style={{ background: "rgba(239,68,68,0.06)", border: `1px solid ${COLORS.danger}33` }}>
+          <div key={entry.id} className="rounded-md p-3" style={{ background: "rgba(220,38,38,0.05)", border: `1px solid ${COLORS.danger}33` }}>
             <div className="flex items-start justify-between gap-2 flex-wrap">
-              <div className="text-sm font-mono" style={{ color: "#fecaca" }}>
+              <div className="text-sm font-mono" style={{ color: "#991b1b" }}>
                 <span style={{ color: COLORS.textDim }}>[{entry.time}]</span> <span className="font-semibold">{CODE_LABELS[entry.code]}</span> — {entry.text}
               </div>
               <div className="flex gap-1.5 flex-wrap items-center">
