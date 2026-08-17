@@ -581,7 +581,7 @@ export default function HeatExchangerSCADA() {
         {activeTab === "history" && (
           <HistoryTab incidents={incidents} unresolvedCount={unresolvedCount} resolvedCount={resolvedCount} onAcknowledge={acknowledgeIncident} t={t} />
         )}
-        {activeTab === "manual" && <ManualTab t={t} />}
+        {activeTab === "manual" && <ManualTab t={t} locale={locale} />}
         {activeTab === "settings" && (
           <SettingsTab
             draftThresholds={draftThresholds}

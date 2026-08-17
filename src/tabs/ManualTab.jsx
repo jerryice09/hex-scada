@@ -6,7 +6,9 @@ import { MANUAL_SECTIONS } from "../data/manual";
 // 문제점 개선: 신입 사원이 열교환기를 어떻게 가동/정지해야 하는지 안내할 문서가
 // 전혀 없어서, 대시보드만 봐서는 "지금 뭘 해야 하는지" 판단하기 어려웠다.
 // 이 탭은 가동 전 점검부터 정지 절차, SOP 요약, FAQ까지 한 곳에 정리해서 보여준다.
-export default function ManualTab({ t }) {
+// locale에 맞는 언어(한국어/영어/베트남어)의 매뉴얼을 선택해서 표시한다.
+export default function ManualTab({ t, locale }) {
+  const sections = MANUAL_SECTIONS[locale] || MANUAL_SECTIONS.ko;
   return (
     <section className="rounded-lg p-4 md:p-6" style={{ background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}` }}>
       <div className="flex items-center gap-2 mb-1">
@@ -20,7 +22,7 @@ export default function ManualTab({ t }) {
       </p>
 
       <div className="flex flex-col gap-6">
-        {MANUAL_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <div key={section.id}>
             <h3 className="text-sm font-bold mb-2 pb-1" style={{ color: COLORS.textPrimary, borderBottom: `1px solid ${COLORS.panelBorder}` }}>
               {section.title}
