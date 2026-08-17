@@ -218,10 +218,10 @@ export function computeRiskScore(values, thresholds, faultMap) {
 }
 
 export function riskBucket(score) {
-  if (score <= 30) return { label: "안전", color: COLORS.normal };
-  if (score <= 60) return { label: "주의", color: COLORS.caution };
-  if (score <= 80) return { label: "경고", color: COLORS.warning };
-  return { label: "위험", color: COLORS.danger };
+  if (score <= 30) return { key: "safe", label: "안전", color: COLORS.normal };
+  if (score <= 60) return { key: "caution", label: "주의", color: COLORS.caution };
+  if (score <= 80) return { key: "warning", label: "경고", color: COLORS.warning };
+  return { key: "danger", label: "위험", color: COLORS.danger };
 }
 
 // ------------------------------------------------------------

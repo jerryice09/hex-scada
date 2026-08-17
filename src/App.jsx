@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Activity, Wifi, WifiOff } from "lucide-react";
 import "./styles/scada.css";
+import { LOCALES, translate } from "./data/i18n";
+
+// 상태 레벨(0~3) → i18n 키 매핑
+const STATUS_KEYS = ["status_normal", "status_caution", "status_warning", "status_danger"];
 
 import {
   COLORS,
@@ -51,6 +55,10 @@ export default function HeatExchangerSCADA() {
   const [now, setNow] = useState(new Date());
   const [activeTab, setActiveTab] = useState("monitor");
   const [lastNormalTime, setLastNormalTime] = useState(() => nowStr());
+
+  // 다국어 지원: 기본 한국어, 영어/베트남어 전환 가능
+  const [locale, setLocale] = useState("ko");
+  const t = useCallback((key, params) => translate(locale, key, params), [locale]);
 
   // 실시간 하드웨어(ESP32) 연동 모드 — true면 시뮬레이션 지터 대신 /api/sensors를 폴링한다.
   const [hwMode, setHwMode] = useState(false);
@@ -347,16 +355,16 @@ export default function HeatExchangerSCADA() {
     if (!valid) {
       setValidationErrors(errors);
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-      setToast({ type: "error", message: "⚠ 입력값을 확인해주세요 — 적용되지 않았습니다" });
+      setToast({ type: "error", message: t("toast_invalid") });
       toastTimerRef.current = setTimeout(() => setToast(null), 3000);
       return;
     }
     setValidationErrors([]);
     setThresholds({ ...draftThresholds });
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToast({ type: "success", message: `✅ ${nowStr()} 임계값이 적용되었습니다` });
+    setToast({ type: "success", message: t("toast_applied", { time: nowStr() }) });
     toastTimerRef.current = setTimeout(() => setToast(null), 3000);
-  }, [draftThresholds]);
+  }, [draftThresholds, t]);
 
   const resetThresholds = useCallback(() => {
     setValidationErrors([]);
@@ -424,7 +432,7 @@ export default function HeatExchangerSCADA() {
         animation: isDanger ? "scada-danger-blink 1s ease-in-out infinite" : "none",
       }}
     >
-      <SopModal incident={activeSop} onConfirm={confirmSop} />
+      <SopModal incident={activeSop} onConfirm={confirmSop} t={t} />
       <Toast toast={toast} />
 
       {/* ============================================================
@@ -438,7 +446,7 @@ export default function HeatExchangerSCADA() {
             </div>
             <div>
               <h1 className="text-sm font-semibold tracking-wide" style={{ color: COLORS.textPrimary }}>
-                열교환기 통합 안전 검지 시스템{" "}
+                {t("app_title")}{" "}
                 <span className="font-mono text-xs" style={{ color: COLORS.textDim }}>
                   HEX-SCADA v3.1
                 </span>
@@ -449,9 +457,27 @@ export default function HeatExchangerSCADA() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* 다국어 전환: 한국어 / English / Tiếng Việt */}
+            <div className="flex items-center rounded-md overflow-hidden" style={{ border: `1px solid ${COLORS.panelBorderLit}` }}>
+              {LOCALES.map((l) => (
+                <button
+                  key={l.code}
+                  onClick={() => setLocale(l.code)}
+                  className="text-[11px] font-mono px-2.5 py-1.5"
+                  style={{
+                    background: locale === l.code ? COLORS.cyan : "transparent",
+                    color: locale === l.code ? "#ffffff" : COLORS.textDim,
+                    fontWeight: locale === l.code ? 700 : 500,
+                  }}
+                >
+                  {l.code.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
             <div className="text-[11px] font-mono px-3 py-1.5 rounded-md" style={{ border: `1px solid ${COLORS.panelBorder}`, color: COLORS.textDim }}>
-              마지막 정상 확인: <span style={{ color: COLORS.normal }}>{lastNormalTime}</span>
+              {t("last_normal_check")}: <span style={{ color: COLORS.normal }}>{lastNormalTime}</span>
             </div>
 
             {hwMode && (
@@ -460,7 +486,7 @@ export default function HeatExchangerSCADA() {
                 style={{ border: `1px solid ${hwOnline ? COLORS.normal : COLORS.danger}55`, color: hwOnline ? COLORS.normal : COLORS.danger }}
               >
                 {hwOnline ? <Wifi size={12} /> : <WifiOff size={12} />}
-                {hwOnline ? "ESP32 연결됨" : "ESP32 연결 끊김"}
+                {hwOnline ? t("esp32_connected") : t("esp32_disconnected")}
               </div>
             )}
 
@@ -470,16 +496,16 @@ export default function HeatExchangerSCADA() {
             >
               <span className="w-2.5 h-2.5 rounded-full" style={{ background: overallMeta.color, animation: isDanger ? "scada-pulse-dot 0.8s ease-in-out infinite" : "none" }} />
               <span className="text-xs font-mono" style={{ color: COLORS.textDim }}>
-                시스템 상태
+                {t("system_status")}
               </span>
               <span className="text-sm font-bold" style={{ color: overallMeta.color }}>
-                {overallMeta.label}
+                {t(STATUS_KEYS[status.level])}
               </span>
             </div>
 
             <div className="text-[10px] px-2.5 py-1.5 rounded-md text-right leading-tight" style={{ border: `1px solid ${COLORS.panelBorderLit}`, color: COLORS.textDim }}>
-              <div style={{ color: COLORS.cyan }}>AI × 산업혁신</div>
-              <div>여수석유화학고등학교</div>
+              <div style={{ color: COLORS.cyan }}>{t("badge_track")}</div>
+              <div>{t("badge_school")}</div>
             </div>
           </div>
         </div>
@@ -502,7 +528,7 @@ export default function HeatExchangerSCADA() {
                 }}
               >
                 <span>{tab.emoji}</span>
-                <span>{tab.label}</span>
+                <span>{t(`tab_${tab.key}`)}</span>
                 {isRiskHot && <span className="w-1.5 h-1.5 rounded-full" style={{ background: COLORS.danger }} />}
                 {badgeCount > 0 && (
                   <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full" style={{ background: COLORS.danger, color: "#ffffff" }}>
@@ -522,10 +548,10 @@ export default function HeatExchangerSCADA() {
             <div key={m.code} className="flex items-center gap-2 text-sm font-mono" style={{ color: "#991b1b" }}>
               {idx === 0 && (
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: COLORS.danger, color: "#ffffff" }}>
-                  🚨 1순위 대응
+                  {t("priority_badge")}
                 </span>
               )}
-              {m.text}
+              {t(`msg_${m.code}`)}
             </div>
           ))}
         </div>
@@ -544,14 +570,15 @@ export default function HeatExchangerSCADA() {
             runScenario={runScenario}
             incidents={incidents}
             hwMode={hwMode}
+            t={t}
           />
         )}
         {activeTab === "risk" && (
-          <RiskTab riskScore={riskScore} bucket={bucket} predictions={predictions} topPrediction={topPrediction} hasWarningTrend={hasWarningTrend} paramLevel={paramLevel} faultMap={faultMap} />
+          <RiskTab riskScore={riskScore} bucket={bucket} predictions={predictions} topPrediction={topPrediction} hasWarningTrend={hasWarningTrend} paramLevel={paramLevel} faultMap={faultMap} t={t} />
         )}
-        {activeTab === "diagram" && <DiagramTab paramLevel={paramLevel} dangerCodes={status.dangerMessages.map((m) => m.code)} />}
+        {activeTab === "diagram" && <DiagramTab paramLevel={paramLevel} dangerCodes={status.dangerMessages.map((m) => m.code)} t={t} />}
         {activeTab === "history" && (
-          <HistoryTab incidents={incidents} unresolvedCount={unresolvedCount} resolvedCount={resolvedCount} onAcknowledge={acknowledgeIncident} />
+          <HistoryTab incidents={incidents} unresolvedCount={unresolvedCount} resolvedCount={resolvedCount} onAcknowledge={acknowledgeIncident} t={t} />
         )}
         {activeTab === "settings" && (
           <SettingsTab
@@ -564,12 +591,13 @@ export default function HeatExchangerSCADA() {
             setHwMode={setHwMode}
             hwOnline={hwOnline}
             hwLastSeen={hwLastSeen}
+            t={t}
           />
         )}
       </main>
 
       <footer className="w-full px-5 py-3 text-center text-[11px] font-mono" style={{ borderTop: `1px solid ${COLORS.panelBorder}`, color: COLORS.textDim }}>
-        본 시스템은 바이브 코딩(AI 보조 코딩) 기법으로 구현되었습니다 · 여수석유화학고등학교 × 제4회 NAVER OGQ마켓 AI Competition
+        {t("footer_text")}
       </footer>
     </div>
   );

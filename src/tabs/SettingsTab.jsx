@@ -3,10 +3,12 @@ import { Settings as SettingsIcon, Save, Undo2, Wifi, WifiOff } from "lucide-rea
 import { COLORS } from "../data/constants";
 import ThresholdRow from "../components/ThresholdRow";
 
+const SENSOR_KEY_MAP = { inTemp: "sensor_inTemp", outTemp: "sensor_outTemp", inFlow: "sensor_inFlow", outFlow: "sensor_outFlow", pressure: "sensor_pressure", flame: "sensor_flame" };
+
 // draftThresholds/setDraftThresholds: 입력 중인 값 (아직 미적용)
 // onSave/onReset: App.jsx에서 검증 후 실제 thresholds 상태에 반영하는 핸들러
 // validationErrors: App.jsx의 validateThresholds() 결과 중 errors 배열 (있으면 저장 버튼 클릭 시 화면에 표시)
-export default function SettingsTab({ draftThresholds, setDraftThresholds, onSave, onReset, validationErrors, hwMode, setHwMode, hwOnline, hwLastSeen }) {
+export default function SettingsTab({ draftThresholds, setDraftThresholds, onSave, onReset, validationErrors, hwMode, setHwMode, hwOnline, hwLastSeen, t }) {
   return (
     <section className="rounded-lg p-5 flex flex-col gap-4" style={{ background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}` }}>
       {/* 데이터 소스 전환: 시뮬레이션 ↔ 실시간 하드웨어(ESP32) */}
@@ -15,7 +17,7 @@ export default function SettingsTab({ draftThresholds, setDraftThresholds, onSav
           <div className="flex items-center gap-2">
             {hwMode && hwOnline ? <Wifi size={16} style={{ color: COLORS.normal }} /> : <WifiOff size={16} style={{ color: COLORS.textDim }} />}
             <span className="text-sm font-semibold" style={{ color: COLORS.textPrimary }}>
-              데이터 소스
+              {t("settings_data_source_title")}
             </span>
           </div>
           <button
@@ -27,33 +29,31 @@ export default function SettingsTab({ draftThresholds, setDraftThresholds, onSav
               border: `1px solid ${hwMode ? COLORS.normal : COLORS.panelBorderLit}`,
             }}
           >
-            {hwMode ? "🔌 실시간 하드웨어(ESP32) 사용 중" : "🖥 시뮬레이션 사용 중 — 클릭해서 전환"}
+            {hwMode ? t("settings_hw_on") : t("settings_hw_off")}
           </button>
         </div>
         <p className="text-[11px] font-mono" style={{ color: COLORS.textDim }}>
-          {hwMode
-            ? `/api/sensors를 1초마다 조회합니다. ${hwOnline ? "ESP32로부터 정상 수신 중입니다." : "아직 ESP32로부터 데이터를 받지 못했거나 연결이 끊겼습니다 (5초 이상 미수신)."}`
-            : "꺼져 있으면 화면에 표시되는 값은 전부 시뮬레이션(지터/시나리오)입니다. ESP32 배선·배포가 끝났다면 켜서 실제 값으로 전환하세요."}
+          {hwMode ? (hwOnline ? t("settings_hw_on_desc_online") : t("settings_hw_on_desc_offline")) : t("settings_hw_off_desc")}
         </p>
       </div>
 
       <div className="flex items-center gap-2">
         <SettingsIcon size={16} style={{ color: COLORS.cyan }} />
         <h2 className="text-sm font-semibold" style={{ color: COLORS.textPrimary }}>
-          임계값 설정
+          {t("settings_threshold_title")}
         </h2>
       </div>
       <p className="text-xs font-mono px-3 py-2 rounded-md" style={{ background: "rgba(14,165,233,0.08)", color: COLORS.textDim, border: `1px solid ${COLORS.cyan}33` }}>
-        현재 시스템은 여수석유화학고 실습 환경 기준값으로 운전 중입니다. 아래에서 현장별 임계값을 수정하면 즉시 반영됩니다.
+        {t("settings_threshold_notice")}
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <ThresholdRow label="입구 온도" unit="℃" keyName="inTemp" draft={draftThresholds} setDraftThresholds={setDraftThresholds} />
-        <ThresholdRow label="출구 온도" unit="℃" keyName="outTemp" draft={draftThresholds} setDraftThresholds={setDraftThresholds} />
-        <ThresholdRow label="입구 유량" unit="L/min" keyName="inFlow" draft={draftThresholds} setDraftThresholds={setDraftThresholds} />
-        <ThresholdRow label="출구 유량" unit="L/min" keyName="outFlow" draft={draftThresholds} setDraftThresholds={setDraftThresholds} />
-        <ThresholdRow label="배관 압력" unit="kPa" keyName="pressure" draft={draftThresholds} setDraftThresholds={setDraftThresholds} />
-        <ThresholdRow label="화염 감지" unit="%" keyName="flame" draft={draftThresholds} setDraftThresholds={setDraftThresholds} />
+        <ThresholdRow label={t(SENSOR_KEY_MAP.inTemp)} unit="℃" keyName="inTemp" draft={draftThresholds} setDraftThresholds={setDraftThresholds} t={t} />
+        <ThresholdRow label={t(SENSOR_KEY_MAP.outTemp)} unit="℃" keyName="outTemp" draft={draftThresholds} setDraftThresholds={setDraftThresholds} t={t} />
+        <ThresholdRow label={t(SENSOR_KEY_MAP.inFlow)} unit="L/min" keyName="inFlow" draft={draftThresholds} setDraftThresholds={setDraftThresholds} t={t} />
+        <ThresholdRow label={t(SENSOR_KEY_MAP.outFlow)} unit="L/min" keyName="outFlow" draft={draftThresholds} setDraftThresholds={setDraftThresholds} t={t} />
+        <ThresholdRow label={t(SENSOR_KEY_MAP.pressure)} unit="kPa" keyName="pressure" draft={draftThresholds} setDraftThresholds={setDraftThresholds} t={t} />
+        <ThresholdRow label={t(SENSOR_KEY_MAP.flame)} unit="%" keyName="flame" draft={draftThresholds} setDraftThresholds={setDraftThresholds} t={t} />
       </div>
 
       {/* 하한 ≥ 상한, 빈 값 등 저장 직전 검증에 실패하면 표시되는 에러 목록 */}
@@ -67,19 +67,19 @@ export default function SettingsTab({ draftThresholds, setDraftThresholds, onSav
 
       <div className="flex gap-3 mt-1">
         <button onClick={onSave} className="px-4 py-2.5 rounded-md text-sm font-semibold flex items-center gap-2" style={{ background: COLORS.cyan, color: "#ffffff" }}>
-          <Save size={15} /> 저장 및 적용
+          <Save size={15} /> {t("save_button")}
         </button>
         <button
           onClick={onReset}
           className="px-4 py-2.5 rounded-md text-sm font-semibold flex items-center gap-2"
           style={{ background: "transparent", border: `1px solid ${COLORS.panelBorderLit}`, color: COLORS.textPrimary }}
         >
-          <Undo2 size={15} /> 기본값으로 초기화
+          <Undo2 size={15} /> {t("reset_button")}
         </button>
       </div>
 
       <p className="text-[11px] font-mono mt-2" style={{ color: COLORS.textDim }}>
-        본 설정 기능은 실제 산업 현장의 공정 조건에 맞춰 시스템을 즉시 재구성할 수 있음을 시연합니다.
+        {t("settings_footer_note")}
       </p>
     </section>
   );

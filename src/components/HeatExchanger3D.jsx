@@ -19,15 +19,8 @@ const PIN_POSITIONS = {
   flame: [0, 0, 66],
 };
 
-const PIN_LABELS = {
-  in: "IN · 입구",
-  out: "OUT · 출구",
-  vent: "VENT · 벤트",
-  drain: "DRAIN · 드레인",
-  flame: "화염 감지 구역",
-};
-
 // 3D 뷰 위에 항상 떠 있는 짧은 라벨 텍스트 (핀이 작아서 안 보이는 문제 보완)
+// 언어 무관하게 영문 약어로 고정 표기 (IN/OUT/VENT/DRAIN/FLAME)
 const PIN_SHORT_LABELS = {
   in: "IN",
   out: "OUT",
@@ -45,7 +38,7 @@ const LABEL_POSITIONS = {
   flame: [0, 0, 92],
 };
 
-export default function HeatExchanger3D({ levels }) {
+export default function HeatExchanger3D({ levels, t }) {
   const mountRef = useRef(null);
   const pinMeshesRef = useRef({});
   const [loading, setLoading] = useState(true);
@@ -232,19 +225,19 @@ export default function HeatExchanger3D({ levels }) {
       <div ref={mountRef} className="w-full h-full rounded-lg" style={{ background: "#f1f5f9" }} />
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center text-sm font-mono" style={{ color: COLORS.textDim }}>
-          3D 모델 불러오는 중…
+          {t("loading_3d")}
         </div>
       )}
       {loadError && (
         <div className="absolute inset-0 flex items-center justify-center text-sm font-mono" style={{ color: COLORS.danger }}>
-          3D 모델을 불러오지 못했습니다 (/models/heat_exchanger.stl 확인 필요)
+          {t("load_error_3d")} (/models/heat_exchanger.stl)
         </div>
       )}
       <div className="absolute bottom-2 right-3 text-[10px] font-mono" style={{ color: COLORS.textDim }}>
-        드래그: 회전 · 휠: 확대/축소
+        {t("drag_hint")}
       </div>
     </div>
   );
 }
 
-export { PIN_LABELS, PIN_POSITIONS };
+export { PIN_POSITIONS };

@@ -1,6 +1,6 @@
 import React from "react";
 import { COLORS, STATUS_META } from "../data/constants";
-import HeatExchanger3D, { PIN_LABELS } from "../components/HeatExchanger3D";
+import HeatExchanger3D from "../components/HeatExchanger3D";
 
 // 위험 시나리오(코드) → SOP 대응 절차상 실제로 조작해야 하는 설비 위치.
 // 예) 워터해머링 SOP: "① 출구 드레인 밸브 개방  ② 입구 증기 공급 50% 감소"
@@ -13,11 +13,15 @@ const SOP_AFFECTED_PINS = {
   HEAT_FAULT: ["in", "out"], // 유량밸브 점검(입구) + 열교환 효율 재측정(출구)
 };
 
+const PIN_LABEL_KEYS = { in: "pin_in", out: "pin_out", vent: "pin_vent", drain: "pin_drain", flame: "pin_flame" };
+const PIN_DESC_KEYS = { in: "desc_in", out: "desc_out", vent: "desc_vent", drain: "desc_drain", flame: "desc_flame" };
+const STATUS_KEYS = ["status_normal", "status_caution", "status_warning", "status_danger"];
+
 // 문제점 개선: 기존에는 추상화된 SVG 배관도라서 실제 밸브 위치를 알기 어려웠다.
 // 학생이 OpenSCAD로 실측 규격(전장 555mm, 쉘 외경 114mm 등)에 맞춰 직접 3D 모델링한
 // 열교환기(입구/출구/벤트/드레인 각인 포함)를 그대로 불러와서, 신입 사원도 실물과
 // 동일한 형태로 각 포트 위치를 익힐 수 있게 했다.
-export default function DiagramTab({ paramLevel, dangerCodes }) {
+export default function DiagramTab({ paramLevel, dangerCodes, t }) {
   // 1단계: 센서값 기준 기본 레벨
   const heatFault = dangerCodes.includes("HEAT_FAULT");
   const levels = {
@@ -37,41 +41,35 @@ export default function DiagramTab({ paramLevel, dangerCodes }) {
     });
   });
 
-  const sections = [
-    { key: "in", desc: "고온 유체 유입 지점 — 온도·유량 이상 또는 SOP상 공급 조작 대상일 때 강조" },
-    { key: "out", desc: "유체 배출 지점 — 출구 온도 이상 시 강조" },
-    { key: "vent", desc: "압력 릴리프 밸브(벤트) — 배관 압력 이상 또는 과압 SOP 대상일 때 강조" },
-    { key: "drain", desc: "드레인 밸브 — 응축수 배출(출구 유량) 또는 워터해머링 SOP 대상일 때 강조" },
-    { key: "flame", desc: "설비 주변 화염 감지 구역" },
-  ];
+  const sectionKeys = ["in", "out", "vent", "drain", "flame"];
 
   return (
     <section className="rounded-lg p-4" style={{ background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}` }}>
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-xs uppercase tracking-widest" style={{ color: COLORS.textDim }}>
-          열교환기 3D 모델 (OpenSCAD 실측 설계 · 실시간 상태 연동)
+          {t("diagram_title")}
         </h2>
         <span className="text-[10px] font-mono px-2 py-0.5 rounded-full" style={{ background: `${COLORS.cyan}14`, color: COLORS.cyan }}>
-          OR-100 실측 모델
+          {t("diagram_badge")}
         </span>
       </div>
 
-      <HeatExchanger3D levels={levels} />
+      <HeatExchanger3D levels={levels} t={t} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-2 mt-4">
-        {sections.map((s) => {
-          const level = levels[s.key];
+        {sectionKeys.map((key) => {
+          const level = levels[key];
           const meta = STATUS_META[level];
           return (
-            <div key={s.key} className="text-xs font-mono px-3 py-2 rounded" style={{ background: "#f8fafc", border: `1px solid ${COLORS.panelBorder}` }}>
+            <div key={key} className="text-xs font-mono px-3 py-2 rounded" style={{ background: "#f8fafc", border: `1px solid ${COLORS.panelBorder}` }}>
               <div className="font-semibold" style={{ color: COLORS.textPrimary }}>
-                {PIN_LABELS[s.key]}
+                {t(PIN_LABEL_KEYS[key])}
               </div>
               <div className="mt-1 font-semibold" style={{ color: meta.color }}>
-                {level === 0 ? "정상 ✅" : `${meta.label} ⚠`}
+                {level === 0 ? `${t(STATUS_KEYS[0])} ✅` : `${t(STATUS_KEYS[level])} ⚠`}
               </div>
               <div className="mt-1" style={{ color: COLORS.textDim }}>
-                {s.desc}
+                {t(PIN_DESC_KEYS[key])}
               </div>
             </div>
           );

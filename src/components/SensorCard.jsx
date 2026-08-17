@@ -3,7 +3,8 @@ import { COLORS, STATUS_META } from "../data/constants";
 
 // 센서 하나의 실시간 값을 보여주는 카드.
 // fault가 true면 값 대신 "SENSOR FAULT"를 회색으로 표시하고 레벨 색상은 무시한다.
-export default function SensorCard({ icon: Icon, label, value, unit, sub, level, fault }) {
+// statusLabel/faultNote: 다국어 지원을 위해 호출측(MonitorTab)에서 t()로 번역해 전달한다.
+export default function SensorCard({ icon: Icon, label, value, unit, sub, level, fault, statusLabel, faultNote }) {
   if (fault) {
     return (
       <div
@@ -27,7 +28,7 @@ export default function SensorCard({ icon: Icon, label, value, unit, sub, level,
           </span>
         </div>
         <span className="text-[11px] font-mono" style={{ color: "#64748b" }}>
-          SENSOR FAULT · 판단 로직에서 제외됨
+          SENSOR FAULT · {faultNote}
         </span>
       </div>
     );
@@ -44,7 +45,7 @@ export default function SensorCard({ icon: Icon, label, value, unit, sub, level,
           </span>
         </div>
         <span className="text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide" style={{ color: meta.color, background: `${meta.color}1a`, fontSize: "10px" }}>
-          {meta.label}
+          {statusLabel}
         </span>
       </div>
       <div className="flex items-baseline gap-1">

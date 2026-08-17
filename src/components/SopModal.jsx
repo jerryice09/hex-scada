@@ -1,26 +1,28 @@
 import React from "react";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
-import { COLORS, SOP_STEPS } from "../data/constants";
+import { COLORS } from "../data/constants";
 
 // incident: 현재 대응해야 하는 사고 1건 (없으면 아무것도 렌더링하지 않음)
 // onConfirm: [확인 — 조치 완료] 클릭 시 호출. 호출측(App.jsx)에서 incident.resolved/acknowledged 처리를 담당한다.
-export default function SopModal({ incident, onConfirm }) {
+// t: 다국어 번역 헬퍼 (App.jsx에서 전달)
+export default function SopModal({ incident, onConfirm, t }) {
   if (!incident) return null;
-  const sop = SOP_STEPS[incident.code] || { title: "비상 대응 SOP", steps: [] };
+  const code = incident.code;
+  const steps = [1, 2, 3, 4].map((n) => t(`sop_${code}_step${n}`));
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.6)", animation: "tabFadeIn 0.2s ease" }}>
       <div className="w-full max-w-md rounded-xl p-5" style={{ background: COLORS.panel, border: `1px solid ${COLORS.danger}66`, boxShadow: "0 20px 50px rgba(15,23,42,0.25), 0 0 0 1px rgba(220,38,38,0.15)" }}>
         <div className="flex items-center gap-2 mb-1">
           <AlertTriangle size={20} style={{ color: COLORS.danger }} />
           <h3 className="text-base font-bold" style={{ color: COLORS.danger }}>
-            {sop.title}
+            {t(`sop_${code}_title`)}
           </h3>
         </div>
         <p className="text-xs font-mono mb-4" style={{ color: COLORS.textDim }}>
-          {incident.text}
+          {t(`msg_${code}`)}
         </p>
         <ol className="flex flex-col gap-2 mb-5">
-          {sop.steps.map((s, i) => (
+          {steps.map((s, i) => (
             <li key={i} className="flex items-start gap-2 text-sm" style={{ color: COLORS.textPrimary }}>
               <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold font-mono" style={{ background: `${COLORS.danger}22`, color: COLORS.danger }}>
                 {i + 1}
@@ -30,7 +32,7 @@ export default function SopModal({ incident, onConfirm }) {
           ))}
         </ol>
         <button onClick={onConfirm} className="w-full py-2.5 rounded-md font-semibold text-sm flex items-center justify-center gap-2" style={{ background: COLORS.danger, color: "#ffffff" }}>
-          <CheckCircle2 size={16} /> 확인 — 조치 완료
+          <CheckCircle2 size={16} /> {t("sop_confirm_button")}
         </button>
       </div>
     </div>
