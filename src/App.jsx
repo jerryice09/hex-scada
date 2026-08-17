@@ -367,19 +367,21 @@ export default function HeatExchangerSCADA() {
     ].map((r) => {
       if (r.fault) return { ...r, ticks: Infinity, minutes: Infinity };
       let ticks;
+      // minSlope: 정상 지터(노이즈) 폭의 절반 정도로 설정해, 값이 단순히 미세하게
+      // 흔들리는 것만으로 회귀 기울기가 우연히 0이 아니게 나와도 "추세"로 오판하지 않게 한다.
       if (r.key === "inTemp" || r.key === "outTemp") {
         const { min, max } = thresholds[r.key];
         const nominal = (min + max) / 2;
         const rangeHalf = (max - min) / 2 || 1;
-        ticks = ticksToDeviationThreshold(values[r.key], r.slope, nominal, rangeHalf * 3);
+        ticks = ticksToDeviationThreshold(values[r.key], r.slope, nominal, rangeHalf * 3, 0.15);
       } else if (r.key === "inFlow" || r.key === "outFlow") {
         const nominal = nominalOf(r.key, thresholds) || 1;
-        ticks = ticksToLowerThreshold(values[r.key], r.slope, nominal * 0.7);
+        ticks = ticksToLowerThreshold(values[r.key], r.slope, nominal * 0.7, 0.07);
       } else if (r.key === "pressure") {
         const { min, max } = thresholds.pressure;
-        ticks = ticksToUpperThreshold(values.pressure, r.slope, max + (max - min) * 0.5);
+        ticks = ticksToUpperThreshold(values.pressure, r.slope, max + (max - min) * 0.5, 1.8);
       } else {
-        ticks = ticksToUpperThreshold(values.flame, r.slope, thresholds.flame.max * 6);
+        ticks = ticksToUpperThreshold(values.flame, r.slope, thresholds.flame.max * 6, 2.5);
       }
       return { ...r, ticks, minutes: r.already ? 0 : ticks === Infinity ? Infinity : ticks / 60 };
     });

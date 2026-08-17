@@ -39,21 +39,23 @@ export function linRegSlope(ys) {
 }
 
 // 편차 기반(온도) 임계값까지 남은 예상 초(틱) 계산. 추세가 임계값 방향이 아니면 Infinity 반환.
-export function ticksToDeviationThreshold(current, slope, nominal, thresholdDev) {
-  if (Math.abs(slope) < 1e-4) return Infinity;
+// minSlope: 이 값보다 기울기가 작으면 "추세 없음"으로 간주한다. 센서의 정상 지터(노이즈) 폭보다
+// 충분히 커야, 단순히 값이 미세하게 흔들리는 것까지 "위험으로 가는 추세"로 오판하지 않는다.
+export function ticksToDeviationThreshold(current, slope, nominal, thresholdDev, minSlope = 1e-4) {
+  if (Math.abs(slope) < minSlope) return Infinity;
   const target = slope > 0 ? nominal + thresholdDev : nominal - thresholdDev;
   const ticks = (target - current) / slope;
   return ticks > 0 ? ticks : Infinity;
 }
 // 하한(유량 감소) 임계값까지 남은 예상 초 계산. 증가 추세면 Infinity.
-export function ticksToLowerThreshold(current, slope, threshold) {
-  if (slope >= -1e-4) return Infinity;
+export function ticksToLowerThreshold(current, slope, threshold, minSlope = 1e-4) {
+  if (slope >= -minSlope) return Infinity;
   const ticks = (threshold - current) / slope;
   return ticks > 0 ? ticks : Infinity;
 }
 // 상한(압력·화염감지 상승) 임계값까지 남은 예상 초 계산. 감소 추세면 Infinity.
-export function ticksToUpperThreshold(current, slope, threshold) {
-  if (slope <= 1e-4) return Infinity;
+export function ticksToUpperThreshold(current, slope, threshold, minSlope = 1e-4) {
+  if (slope <= minSlope) return Infinity;
   const ticks = (threshold - current) / slope;
   return ticks > 0 ? ticks : Infinity;
 }
