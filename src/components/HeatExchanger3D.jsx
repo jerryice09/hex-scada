@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
+import { CSS2DRenderer, CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { COLORS } from "../data/constants";
 
 // ------------------------------------------------------------
@@ -26,6 +27,24 @@ const PIN_LABELS = {
   flame: "화염 감지 구역",
 };
 
+// 3D 뷰 위에 항상 떠 있는 짧은 라벨 텍스트 (핀이 작아서 안 보이는 문제 보완)
+const PIN_SHORT_LABELS = {
+  in: "IN",
+  out: "OUT",
+  vent: "VENT",
+  drain: "DRAIN",
+  flame: "FLAME",
+};
+
+// 라벨을 핀 위치에서 살짝 띄워서 모델과 겹치지 않게 배치 (상단 포트는 위로, 하단 드레인은 아래로)
+const LABEL_POSITIONS = {
+  in: [-201.5, 0, 82],
+  out: [201.5, 0, 82],
+  vent: [-172.5, 0, 82],
+  drain: [172.5, 0, -82],
+  flame: [0, 0, 92],
+};
+
 export default function HeatExchanger3D({ levels }) {
   const mountRef = useRef(null);
   const pinMeshesRef = useRef({});
@@ -42,12 +61,22 @@ export default function HeatExchanger3D({ levels }) {
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(40, mount.clientWidth / mount.clientHeight, 1, 5000);
-    camera.position.set(500, 380, 650);
+    // 하단의 DRAIN 핀까지 기본 화면에서 보이도록 카메라를 살짝 낮춰서 비스듬히 내려다보게 설정
+    camera.position.set(480, 260, 680);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(mount.clientWidth, mount.clientHeight);
     mount.appendChild(renderer.domElement);
+
+    // 라벨(IN/OUT/VENT/DRAIN/FLAME) 오버레이 렌더러 — 항상 화면에 보이는 2D 텍스트 태그
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(mount.clientWidth, mount.clientHeight);
+    labelRenderer.domElement.style.position = "absolute";
+    labelRenderer.domElement.style.top = "0px";
+    labelRenderer.domElement.style.left = "0px";
+    labelRenderer.domElement.style.pointerEvents = "none"; // 드래그 회전을 가리지 않도록
+    mount.appendChild(labelRenderer.domElement);
 
     // 조명
     scene.add(new THREE.AmbientLight(0xffffff, 0.65));
@@ -71,8 +100,9 @@ export default function HeatExchanger3D({ levels }) {
     modelGroup.rotation.x = -Math.PI / 2;
     scene.add(modelGroup);
 
-    // 핀(포트 상태 마커) 생성
+    // 핀(포트 상태 마커) + 항상 보이는 라벨 태그 생성
     const pinMeshes = {};
+    const labelDivs = {};
     Object.entries(PIN_POSITIONS).forEach(([key, pos]) => {
       const geo = new THREE.SphereGeometry(7, 20, 20);
       const mat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, emissive: 0x000000, roughness: 0.4 });
@@ -80,6 +110,18 @@ export default function HeatExchanger3D({ levels }) {
       mesh.position.set(pos[0], pos[1], pos[2]);
       modelGroup.add(mesh);
       pinMeshes[key] = mesh;
+
+      const div = document.createElement("div");
+      div.textContent = PIN_SHORT_LABELS[key];
+      div.style.cssText =
+        "padding:2px 7px;border-radius:999px;font-size:10px;font-family:monospace;font-weight:700;" +
+        "white-space:nowrap;border:1px solid rgba(15,23,42,0.15);box-shadow:0 1px 4px rgba(15,23,42,0.25);" +
+        "transform:translate(-50%,-100%);letter-spacing:0.03em;";
+      const label = new CSS2DObject(div);
+      const lp = LABEL_POSITIONS[key];
+      label.position.set(lp[0], lp[1], lp[2]);
+      modelGroup.add(label);
+      labelDivs[key] = div;
     });
     pinMeshesRef.current = pinMeshes;
 
@@ -103,13 +145,19 @@ export default function HeatExchanger3D({ levels }) {
       }
     );
 
-    // 애니메이션 루프: 컨트롤 감쇠 갱신 + 핀 색상/점멸 실시간 반영
+    // 애니메이션 루프: 컨트롤 감쇠 갱신 + 핀 색상/점멸 + 라벨 배지 색상 실시간 반영
     let raf;
     const statusColor = (level) => {
       if (level >= 3) return 0xdc2626;
       if (level === 2) return 0xea580c;
       if (level === 1) return 0xca8a04;
       return 0x16a34a;
+    };
+    const statusColorCss = (level) => {
+      if (level >= 3) return "#dc2626";
+      if (level === 2) return "#ea580c";
+      if (level === 1) return "#ca8a04";
+      return "#16a34a";
     };
     const clock = new THREE.Clock();
     const animate = () => {
@@ -122,20 +170,29 @@ export default function HeatExchanger3D({ levels }) {
         const level = lv ? lv[key] || 0 : 0;
         const color = statusColor(level);
         mesh.material.color.setHex(color);
+
+        const div = labelDivs[key];
+        const cssColor = statusColorCss(level);
+        div.style.background = cssColor;
+        div.style.color = "#ffffff";
+
         if (level >= 3) {
-          // 위험 상태 핀만 점멸 + 확대/축소
+          // 위험 상태 핀 + 라벨 모두 점멸 + 확대/축소
           const pulse = 0.6 + Math.abs(Math.sin(t * 4)) * 0.6;
           mesh.material.emissive.setHex(0xdc2626);
           mesh.material.emissiveIntensity = pulse;
           const s = 1 + Math.abs(Math.sin(t * 4)) * 0.35;
           mesh.scale.set(s, s, s);
+          div.style.opacity = String(0.55 + Math.abs(Math.sin(t * 4)) * 0.45);
         } else {
           mesh.material.emissiveIntensity = 0;
           mesh.scale.set(1, 1, 1);
+          div.style.opacity = "1";
         }
       });
 
       renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
     };
     animate();
 
@@ -147,6 +204,7 @@ export default function HeatExchanger3D({ levels }) {
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
+      labelRenderer.setSize(w, h);
     });
     ro.observe(mount);
 
@@ -164,6 +222,7 @@ export default function HeatExchanger3D({ levels }) {
         meshRef.material.dispose();
       }
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
+      if (mount.contains(labelRenderer.domElement)) mount.removeChild(labelRenderer.domElement);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
