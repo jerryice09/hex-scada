@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from "recharts";
 import { Power, RotateCcw, Thermometer, Droplets, Gauge, Flame } from "lucide-react";
 import { COLORS, UNITS, SCENARIOS, CODE_LABELS } from "../data/constants";
@@ -8,19 +8,56 @@ import SensorCard from "../components/SensorCard";
 export default function MonitorTab({ values, paramLevel, faultMap, thresholds, history, activeScenario, isTransitioning, runScenario, incidents, hwMode }) {
   const recentIncidents = incidents.slice(0, 10);
   // ④ 차트 경보 마커: incidents에 저장해둔 tick 번호에 세로 점선을 그린다.
-  // history는 항상 최근 20개만 유지되므로, 오래된 마커는 자연스럽게 화면 밖으로 밀려난다.
   const alarmMarks = incidents.map((i) => ({ tick: i.tick, label: `${CODE_LABELS[i.code]} — ${i.text}` }));
 
   const sensorSub = (key) => `정상 ${thresholds[key].min}~${thresholds[key].max}${UNITS[key]}`;
 
-  // ④ x축 표시 개선: 내부적으로는 계속 증가하는 절대 tick 번호(경보 마커 매칭용으로 필요)를 쓰지만,
-  // 화면에는 "몇 초 전"인지 최신 포인트를 0으로 두고 상대 시간으로 환산해서 보여준다.
-  // (예전엔 절대 tick 번호가 그대로 찍혀서 224, 225 같은 의미 없는 숫자가 보였음)
-  const latestTick = history.length > 0 ? history[history.length - 1].t : 0;
-  const formatSecondsAgo = (t) => {
-    const diff = t - latestTick;
-    return diff === 0 ? "지금" : `${diff}초`;
+  // 차트 보기 모드: "full" = 모니터링 시작(0초)부터 누적된 경과 시간을 전부 보여줌
+  // (60초가 지나면 자동으로 분 단위 눈금으로 전환), "zoom" = 최근 20개 포인트만
+  // 놓고 다시 초 단위 상세로 확대해서 보는 모드.
+  const [chartMode, setChartMode] = useState("full");
+  const chartData = chartMode === "zoom" ? history.slice(-20) : history;
+
+  // "전체" 모드: t(모니터링 시작 이후 경과 초)를 그대로 라벨로 사용, 60초 이후부터는 분 단위로 표기
+  const formatElapsed = (t) => {
+    if (t < 60) return `${t}초`;
+    const m = Math.floor(t / 60);
+    const s = t % 60;
+    return s === 0 ? `${m}분` : `${m}분${s}초`;
   };
+
+  // "확대(최근 20초)" 모드: 현재 슬라이스의 마지막 포인트를 "지금"으로 두고 상대 시간(몇 초 전)으로 표기
+  const latestZoomTick = chartData.length > 0 ? chartData[chartData.length - 1].t : 0;
+  const formatZoomRelative = (t) => {
+    const diff = t - latestZoomTick;
+    return diff === 0 ? "지금" : `${diff}초 전`;
+  };
+
+  const xTickFormatter = chartMode === "zoom" ? formatZoomRelative : formatElapsed;
+  // 포인트가 많아질수록(전체 모드) x축 라벨이 빽빽해지므로, 대략 8개 안팎만 보이게 간격을 자동 조정
+  const xTickInterval = chartMode === "zoom" ? 0 : Math.max(0, Math.ceil(chartData.length / 8) - 1);
+
+  const ChartModeToggle = () => (
+    <div className="flex items-center gap-1.5 mb-2">
+      {[
+        { key: "full", label: "전체" },
+        { key: "zoom", label: "최근 20초 확대" },
+      ].map((m) => (
+        <button
+          key={m.key}
+          onClick={() => setChartMode(m.key)}
+          className="text-[11px] font-mono px-2.5 py-1 rounded-full"
+          style={{
+            background: chartMode === m.key ? COLORS.cyan : "#f1f5f9",
+            color: chartMode === m.key ? "#ffffff" : COLORS.textDim,
+            border: `1px solid ${chartMode === m.key ? COLORS.cyan : COLORS.panelBorder}`,
+          }}
+        >
+          {m.label}
+        </button>
+      ))}
+    </div>
+  );
 
   const renderAlarmReferenceLines = (keyPrefix) =>
     alarmMarks.map((m, i) => (
@@ -60,15 +97,16 @@ export default function MonitorTab({ values, paramLevel, faultMap, thresholds, h
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         <section className="xl:col-span-2 rounded-lg p-4" style={{ background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}` }}>
-          <h2 className="text-xs uppercase tracking-widest mb-3" style={{ color: COLORS.textDim }}>
-            온도 추이 (최근 20개 포인트 · 점선 = 경보 발생 시점)
+          <h2 className="text-xs uppercase tracking-widest mb-1" style={{ color: COLORS.textDim }}>
+            온도 추이 (점선 = 경보 발생 시점)
           </h2>
+          <ChartModeToggle />
           <ResponsiveContainer width="100%" height={170}>
-            <LineChart data={history} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
+            <LineChart data={chartData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={COLORS.panelBorder} />
-              <XAxis dataKey="t" tickFormatter={formatSecondsAgo} tick={{ fill: COLORS.textDim, fontSize: 10 }} stroke={COLORS.panelBorder} minTickGap={20} />
+              <XAxis dataKey="t" tickFormatter={xTickFormatter} interval={xTickInterval} tick={{ fill: COLORS.textDim, fontSize: 10 }} stroke={COLORS.panelBorder} minTickGap={20} />
               <YAxis tick={{ fill: COLORS.textDim, fontSize: 10 }} stroke={COLORS.panelBorder} domain={[0, 100]} />
-              <Tooltip labelFormatter={formatSecondsAgo} contentStyle={{ background: "#ffffff", border: `1px solid ${COLORS.panelBorderLit}`, fontSize: 12, boxShadow: "0 4px 16px rgba(15,23,42,0.12)" }} labelStyle={{ color: COLORS.textDim }} />
+              <Tooltip labelFormatter={xTickFormatter} contentStyle={{ background: "#ffffff", border: `1px solid ${COLORS.panelBorderLit}`, fontSize: 12, boxShadow: "0 4px 16px rgba(15,23,42,0.12)" }} labelStyle={{ color: COLORS.textDim }} />
               <Legend wrapperStyle={{ fontSize: 11, color: COLORS.textDim }} />
               {renderAlarmReferenceLines("t")}
               <Line type="monotone" dataKey="inTemp" name="입구 온도" stroke={COLORS.cyan} dot={false} strokeWidth={2} isAnimationActive={false} />
@@ -76,15 +114,15 @@ export default function MonitorTab({ values, paramLevel, faultMap, thresholds, h
             </LineChart>
           </ResponsiveContainer>
 
-          <h2 className="text-xs uppercase tracking-widest mb-3 mt-4" style={{ color: COLORS.textDim }}>
-            유량 추이 (최근 20개 포인트 · 점선 = 경보 발생 시점)
+          <h2 className="text-xs uppercase tracking-widest mb-1 mt-4" style={{ color: COLORS.textDim }}>
+            유량 추이 (점선 = 경보 발생 시점)
           </h2>
           <ResponsiveContainer width="100%" height={170}>
-            <LineChart data={history} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
+            <LineChart data={chartData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={COLORS.panelBorder} />
-              <XAxis dataKey="t" tickFormatter={formatSecondsAgo} tick={{ fill: COLORS.textDim, fontSize: 10 }} stroke={COLORS.panelBorder} minTickGap={20} />
+              <XAxis dataKey="t" tickFormatter={xTickFormatter} interval={xTickInterval} tick={{ fill: COLORS.textDim, fontSize: 10 }} stroke={COLORS.panelBorder} minTickGap={20} />
               <YAxis tick={{ fill: COLORS.textDim, fontSize: 10 }} stroke={COLORS.panelBorder} domain={[0, 14]} />
-              <Tooltip labelFormatter={formatSecondsAgo} contentStyle={{ background: "#ffffff", border: `1px solid ${COLORS.panelBorderLit}`, fontSize: 12, boxShadow: "0 4px 16px rgba(15,23,42,0.12)" }} labelStyle={{ color: COLORS.textDim }} />
+              <Tooltip labelFormatter={xTickFormatter} contentStyle={{ background: "#ffffff", border: `1px solid ${COLORS.panelBorderLit}`, fontSize: 12, boxShadow: "0 4px 16px rgba(15,23,42,0.12)" }} labelStyle={{ color: COLORS.textDim }} />
               <Legend wrapperStyle={{ fontSize: 11, color: COLORS.textDim }} />
               {renderAlarmReferenceLines("f")}
               <Line type="monotone" dataKey="inFlow" name="입구 유량" stroke={COLORS.normal} dot={false} strokeWidth={2} isAnimationActive={false} />

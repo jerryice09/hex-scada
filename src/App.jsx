@@ -14,6 +14,7 @@ import {
   TABS,
   PRIORITY_ORDER,
   MAX_INCIDENT_HISTORY,
+  MAX_CHART_HISTORY,
 } from "./data/constants";
 import {
   lerp,
@@ -46,7 +47,7 @@ export default function HeatExchangerSCADA() {
   const [baseline, setBaseline] = useState({ ...NORMAL_BASELINE });
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [activeScenario, setActiveScenario] = useState("normal");
-  const [history, setHistory] = useState(() => Array.from({ length: 20 }, (_, i) => ({ t: i, ...NORMAL_BASELINE })));
+  const [history, setHistory] = useState(() => [{ t: 0, ...NORMAL_BASELINE }]);
   const [now, setNow] = useState(new Date());
   const [activeTab, setActiveTab] = useState("monitor");
   const [lastNormalTime, setLastNormalTime] = useState(() => nowStr());
@@ -69,7 +70,7 @@ export default function HeatExchangerSCADA() {
   const [sopQueue, setSopQueue] = useState([]);
   const [activeSop, setActiveSop] = useState(null);
 
-  const tickCounter = useRef(20);
+  const tickCounter = useRef(1);
   const transitionRef = useRef(null);
   const lastDangerCodes = useRef(new Set());
   const incidentSeq = useRef(0); // 사고 ID 순번 (Date.now() 충돌 가능성 제거)
@@ -175,23 +176,27 @@ export default function HeatExchangerSCADA() {
   }, [hwMode]);
 
   // ------------------------------------------------------------
-  // 차트/예측용 히스토리 누적: 매초 새 포인트를 추가하고 가장 오래된 포인트를 제거해
-  // 항상 정확히 20개(최근 20개 포인트)를 유지한다.
+  // 차트/예측용 히스토리 누적: 매초 새 포인트를 추가한다.
+  // t는 모니터링 시작(0초)부터 계속 증가하는 "경과 시간"이며, 최대 MAX_CHART_HISTORY개
+  // (5분)까지 쌓이면 그 이후부터는 가장 오래된 포인트를 밀어낸다.
   // ------------------------------------------------------------
   useEffect(() => {
     const id = setInterval(() => {
-      setHistory((prev) => [
-        ...prev.slice(1),
-        {
-          t: tickCounter.current++,
-          inTemp: Number(values.inTemp.toFixed(2)),
-          outTemp: Number(values.outTemp.toFixed(2)),
-          inFlow: Number(values.inFlow.toFixed(2)),
-          outFlow: Number(values.outFlow.toFixed(2)),
-          pressure: Number(values.pressure.toFixed(1)),
-          flame: Number(values.flame.toFixed(1)),
-        },
-      ]);
+      setHistory((prev) => {
+        const next = [
+          ...prev,
+          {
+            t: tickCounter.current++,
+            inTemp: Number(values.inTemp.toFixed(2)),
+            outTemp: Number(values.outTemp.toFixed(2)),
+            inFlow: Number(values.inFlow.toFixed(2)),
+            outFlow: Number(values.outFlow.toFixed(2)),
+            pressure: Number(values.pressure.toFixed(1)),
+            flame: Number(values.flame.toFixed(1)),
+          },
+        ];
+        return next.length > MAX_CHART_HISTORY ? next.slice(next.length - MAX_CHART_HISTORY) : next;
+      });
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, TICK_MS);
     return () => clearInterval(id);

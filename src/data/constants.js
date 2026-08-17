@@ -97,6 +97,10 @@ export const SCENARIOS = {
 export const TRANSITION_MS = 5000;
 export const TRANSITION_STEP_MS = 100;
 export const TICK_MS = 1000;
+// 차트가 보관하는 최대 데이터 포인트 수 (1초당 1개 * 300 = 최근 5분).
+// "전체" 보기에서 60초가 지나면 분 단위 눈금으로 자동 전환되고, "최근 20초" 확대 보기로
+// 언제든 초 단위 상세 구간으로 전환할 수 있다.
+export const MAX_CHART_HISTORY = 300;
 
 // 위험 코드별 4단계 SOP 절차
 export const SOP_STEPS = {
