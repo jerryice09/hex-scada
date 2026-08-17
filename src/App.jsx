@@ -74,6 +74,10 @@ export default function HeatExchangerSCADA() {
   const transitionRef = useRef(null);
   const lastDangerCodes = useRef(new Set());
   const incidentSeq = useRef(0); // 사고 ID 순번 (Date.now() 충돌 가능성 제거)
+  // 히스토리 누적용 setInterval이 매초 values가 바뀔 때마다 재시작되지 않도록,
+  // 최신 values를 ref로 별도 보관해서 읽는다 (문제점 수정: 아래 히스토리 effect 설명 참고)
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
 
   // 센서 오류(SENSOR FAULT) 판정 — 물리적으로 불가능한 값이면 판단 로직에서 제외
   // isSensorFault는 thresholds를 함께 받아, 사용자가 설정 탭에서 범위를 넓혀도
@@ -179,28 +183,37 @@ export default function HeatExchangerSCADA() {
   // 차트/예측용 히스토리 누적: 매초 새 포인트를 추가한다.
   // t는 모니터링 시작(0초)부터 계속 증가하는 "경과 시간"이며, 최대 MAX_CHART_HISTORY개
   // (5분)까지 쌓이면 그 이후부터는 가장 오래된 포인트를 밀어낸다.
+  //
+  // 문제점 수정: 이전에는 이 effect가 [values]에 의존하고 있어서, values가 바뀔 때마다
+  // (=거의 매초) setInterval이 clearInterval → 새로 시작을 반복했다. 이때 두 타이머(정상
+  // 지터가 values를 갱신하는 타이머와, 이 히스토리 기록 타이머)의 시작 시점이 미묘하게
+  // 어긋나면 1000ms를 채우기 직전에 계속 리셋되어 버려서, 실제 기록 주기가 1초가 아니라
+  // 훨씬 느리게(체감상 10초에 한 번꼴로) 밀리는 문제가 있었다. 이제는 effect를 [](최초 1회)로만
+  // 생성하고, 콜백 안에서는 valuesRef.current로 항상 최신 값을 읽어서 타이머 자체는 절대
+  // 재시작되지 않게 했다.
   // ------------------------------------------------------------
   useEffect(() => {
     const id = setInterval(() => {
+      const v = valuesRef.current;
       setHistory((prev) => {
         const next = [
           ...prev,
           {
             t: tickCounter.current++,
-            inTemp: Number(values.inTemp.toFixed(2)),
-            outTemp: Number(values.outTemp.toFixed(2)),
-            inFlow: Number(values.inFlow.toFixed(2)),
-            outFlow: Number(values.outFlow.toFixed(2)),
-            pressure: Number(values.pressure.toFixed(1)),
-            flame: Number(values.flame.toFixed(1)),
+            inTemp: Number(v.inTemp.toFixed(2)),
+            outTemp: Number(v.outTemp.toFixed(2)),
+            inFlow: Number(v.inFlow.toFixed(2)),
+            outFlow: Number(v.outFlow.toFixed(2)),
+            pressure: Number(v.pressure.toFixed(1)),
+            flame: Number(v.flame.toFixed(1)),
           },
         ];
         return next.length > MAX_CHART_HISTORY ? next.slice(next.length - MAX_CHART_HISTORY) : next;
       });
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, TICK_MS);
     return () => clearInterval(id);
-  }, [values]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ------------------------------------------------------------
   // 사고 이력 기록 + SOP 팝업 큐 등록: 새로운 위험 코드가 "새로 감지"될 때만 실행된다.
