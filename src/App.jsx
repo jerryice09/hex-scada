@@ -44,6 +44,7 @@ import MonitorTab from "./tabs/MonitorTab";
 import RiskTab from "./tabs/RiskTab";
 import DiagramTab from "./tabs/DiagramTab";
 import HistoryTab from "./tabs/HistoryTab";
+import ManualTab from "./tabs/ManualTab";
 import SettingsTab from "./tabs/SettingsTab";
 
 export default function HeatExchangerSCADA() {
@@ -580,6 +581,7 @@ export default function HeatExchangerSCADA() {
         {activeTab === "history" && (
           <HistoryTab incidents={incidents} unresolvedCount={unresolvedCount} resolvedCount={resolvedCount} onAcknowledge={acknowledgeIncident} t={t} />
         )}
+        {activeTab === "manual" && <ManualTab t={t} />}
         {activeTab === "settings" && (
           <SettingsTab
             draftThresholds={draftThresholds}

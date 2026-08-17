@@ -179,6 +179,15 @@ ESP32(센서) --HTTPS POST(1초)--> /api/ingest --저장--> Redis(Upstash)
 - ESP8266을 쓴다면 `WiFi.h`/`HTTPClient.h`/`WiFiClientSecure.h` 대신 `ESP8266WiFi.h`/`ESP8266HTTPClient.h`/`WiFiClientSecureBearSSL.h`로 바꿔야 함 (핀 배치도 보드에 맞게 조정).
 - `client.setInsecure()`는 데모/실습용 간이 설정입니다. 실제 운영에서는 인증서 검증을 적용하는 것이 안전합니다.
 
+## 📖 매뉴얼 탭
+
+신입 사원이 열교환기를 어떻게 가동·정지·대응해야 하는지 안내하는 매뉴얼 탭이 포함되어 있습니다.
+내용은 `src/data/manual.js`의 `MANUAL_SECTIONS` 배열에서 관리하며, 이 파일을 수정하면
+매뉴얼 탭 화면에 그대로 반영됩니다. 별도 API 키나 외부 서비스 설정 없이 바로 작동합니다.
+
+포함된 내용: 장비 개요 · 가동 전 점검사항 · 가동 절차 · 정상 운전 범위 · 정지 절차 ·
+이상 상황 대응(SOP) 요약 · 자주 묻는 질문(FAQ)
+
 ## 하드웨어 구성 (BOM, Bill of Materials)
 
 실제 실습에 사용한 부품 목록입니다. 역할 표시가 "(확인 필요)"인 항목은 현재 `hardware/hex_scada_esp32_node.ino`

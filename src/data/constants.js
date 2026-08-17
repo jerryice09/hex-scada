@@ -135,6 +135,7 @@ export const TABS = [
   { key: "risk", label: "위험도 분석", emoji: "📊" },
   { key: "diagram", label: "설비 구조도", emoji: "🏭" },
   { key: "history", label: "사고 이력", emoji: "📋" },
+  { key: "manual", label: "매뉴얼", emoji: "📖" },
   { key: "settings", label: "설정", emoji: "⚙" },
 ];
 

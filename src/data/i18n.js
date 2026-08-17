@@ -28,6 +28,7 @@ export const STRINGS = {
     tab_risk: "위험도 분석",
     tab_diagram: "설비 구조도",
     tab_history: "사고 이력",
+    tab_manual: "매뉴얼",
     tab_settings: "설정",
 
     // 상태 레벨
@@ -167,6 +168,10 @@ export const STRINGS = {
     // 토스트
     toast_applied: "✅ {time} 임계값이 적용되었습니다",
     toast_invalid: "⚠ 입력값을 확인해주세요 — 적용되지 않았습니다",
+
+    // 매뉴얼
+    manual_title: "열교환기(OR-100) 운영 매뉴얼",
+    manual_subtitle: "신입 사원을 위한 가동 전 점검 · 가동/정지 절차 · 이상 상황 대응 요약",
   },
 
   en: {
@@ -184,6 +189,7 @@ export const STRINGS = {
     tab_risk: "Risk Analysis",
     tab_diagram: "3D Diagram",
     tab_history: "Incident History",
+    tab_manual: "Manual",
     tab_settings: "Settings",
 
     status_normal: "Normal",
@@ -311,6 +317,9 @@ export const STRINGS = {
 
     toast_applied: "✅ {time} Thresholds applied",
     toast_invalid: "⚠ Please check your input — not applied",
+
+    manual_title: "Heat Exchanger (OR-100) Operations Manual",
+    manual_subtitle: "For new operators: pre-start checks, startup/shutdown procedures, and emergency response summary",
   },
 
   vi: {
@@ -328,6 +337,7 @@ export const STRINGS = {
     tab_risk: "Phân tích rủi ro",
     tab_diagram: "Mô hình 3D",
     tab_history: "Lịch sử sự cố",
+    tab_manual: "Hướng dẫn",
     tab_settings: "Cài đặt",
 
     status_normal: "Bình thường",
@@ -455,6 +465,9 @@ export const STRINGS = {
 
     toast_applied: "✅ {time} Đã áp dụng ngưỡng",
     toast_invalid: "⚠ Vui lòng kiểm tra lại giá trị nhập — chưa được áp dụng",
+
+    manual_title: "Sổ tay vận hành bộ trao đổi nhiệt (OR-100)",
+    manual_subtitle: "Dành cho nhân viên mới: kiểm tra trước khi vận hành · quy trình khởi động/dừng · tóm tắt xử lý sự cố",
   },
 };
 
