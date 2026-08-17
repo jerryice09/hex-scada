@@ -74,6 +74,10 @@ export default function HeatExchangerSCADA() {
   const transitionRef = useRef(null);
   const lastDangerCodes = useRef(new Set());
   const incidentSeq = useRef(0); // 사고 ID 순번 (Date.now() 충돌 가능성 제거)
+  // 코드별 "마지막으로 사고를 생성한 시각"을 기록해, 노이즈로 인한 짧은 깜빡임(위험→정상→위험)이
+  // 매번 새 사고로 잡히지 않도록 최근에 이미 생성한 코드는 잠시 억제한다.
+  const lastIncidentAtByCode = useRef({});
+  const REPEAT_SUPPRESS_MS = 8000;
   // 히스토리 누적용 setInterval이 매초 values가 바뀔 때마다 재시작되지 않도록,
   // 최신 values를 ref로 별도 보관해서 읽는다 (문제점 수정: 아래 히스토리 effect 설명 참고)
   const valuesRef = useRef(values);
@@ -218,12 +222,24 @@ export default function HeatExchangerSCADA() {
   // ------------------------------------------------------------
   // 사고 이력 기록 + SOP 팝업 큐 등록: 새로운 위험 코드가 "새로 감지"될 때만 실행된다.
   // (기존에 이미 활성 상태였던 코드가 계속 유지되는 동안에는 재등록하지 않음 → 팝업 중복 방지)
+  //
+  // 문제점 수정: 센서값이 임계값 바로 근처에서 정상 지터(노이즈)로 흔들리면, 위험→정상→위험이
+  // 몇 초 간격으로 반복되면서 매번 "새로운 사고"로 잘못 잡혀 사고 이력에 같은 사고가 계속
+  // 중복 생성되는 문제가 있었다. 이제 같은 코드에 대해 REPEAT_SUPPRESS_MS(8초) 이내에
+  // 이미 사고를 생성한 적이 있으면, 잠깐의 깜빡임으로 보고 새로 생성하지 않는다.
   // 이력은 MAX_INCIDENT_HISTORY 건으로 잘라 무한정 누적되지 않도록 한다.
   // ------------------------------------------------------------
   useEffect(() => {
     const currentCodes = new Set(status.dangerMessages.map((m) => m.code));
     status.dangerMessages.forEach((m) => {
       if (!lastDangerCodes.current.has(m.code)) {
+        const now = Date.now();
+        const lastAt = lastIncidentAtByCode.current[m.code] || 0;
+        if (now - lastAt < REPEAT_SUPPRESS_MS) {
+          return; // 최근 깜빡임으로 판단, 새 사고를 만들지 않음
+        }
+        lastIncidentAtByCode.current[m.code] = now;
+
         incidentSeq.current += 1;
         const id = `INC-${incidentSeq.current}-${m.code}`;
         const incident = {

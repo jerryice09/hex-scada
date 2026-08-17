@@ -3,6 +3,17 @@ import { Clock } from "lucide-react";
 import { COLORS, STATUS_META, SENSOR_LABELS } from "../data/constants";
 import RiskGauge from "../components/RiskGauge";
 
+// 문제점 수정: 예전엔 초 단위 예측값을 항상 분 단위로 반올림해서 보여줬다.
+// 5초짜리 시나리오 전환처럼 아주 빠르게 진행되는 경우 반올림하면 항상 "0분"으로만 보여서
+// 마치 예측이 전혀 안 되는 것처럼 보이는 문제가 있었다. 1분 미만이면 초 단위로 보여준다.
+function formatEta(ticksSeconds) {
+  if (ticksSeconds < 60) {
+    const s = Math.max(1, Math.round(ticksSeconds));
+    return `약 ${s}초 후`;
+  }
+  return `약 ${Math.round(ticksSeconds / 60)}분 후`;
+}
+
 export default function RiskTab({ riskScore, bucket, predictions, topPrediction, hasWarningTrend, paramLevel, faultMap }) {
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
@@ -30,9 +41,16 @@ export default function RiskTab({ riskScore, bucket, predictions, topPrediction,
           const currentMaxLevel = activeLevels.length > 0 ? Math.max(...activeLevels) : 0;
 
           if (hasWarningTrend) {
+            if (topPrediction.already) {
+              return (
+                <div className="rounded-md p-3 text-sm font-semibold" style={{ background: `${COLORS.danger}18`, color: COLORS.danger, border: `1px solid ${COLORS.danger}44` }}>
+                  🚨 이미 위험 상태입니다 — 즉시 조치가 필요합니다 ({SENSOR_LABELS[topPrediction.key]})
+                </div>
+              );
+            }
             return (
               <div className="rounded-md p-3 text-sm font-semibold" style={{ background: `${COLORS.danger}18`, color: COLORS.danger, border: `1px solid ${COLORS.danger}44` }}>
-                ⏱ 위험 도달 예상: 약 {Math.max(0, Math.round(topPrediction.minutes))}분 후 ({SENSOR_LABELS[topPrediction.key]})
+                ⏱ 위험 도달 예상: {formatEta(topPrediction.ticks)} ({SENSOR_LABELS[topPrediction.key]})
               </div>
             );
           }
@@ -59,10 +77,13 @@ export default function RiskTab({ riskScore, bucket, predictions, topPrediction,
             if (p.fault) {
               text = "SENSOR FAULT · 예측 제외";
               color = COLORS.fault;
+            } else if (p.already) {
+              text = "이미 위험 상태";
+              color = COLORS.danger;
             } else if (p.minutes !== Infinity) {
               // 실제로 임계값 쪽으로 이동 중인 추세가 감지된 경우 — 얼마나 급한지로 색상 구분
-              text = `약 ${Math.max(0, Math.round(p.minutes))}분 후`;
-              color = p.minutes <= 5 ? COLORS.danger : COLORS.caution;
+              text = formatEta(p.ticks);
+              color = p.ticks <= 300 ? COLORS.danger : COLORS.caution;
             } else if (currentLevel === 0) {
               // 문제점 수정: 예전엔 "추세 없음"이면 현재 상태와 무관하게 무조건 "안전"이라고 표시했다.
               // 하지만 "추세 없음"은 "더 나빠지지 않는다"는 뜻일 뿐, 이미 경고·위험 상태에

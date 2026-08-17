@@ -79,7 +79,10 @@ export const SCENARIOS = {
   fireDetected: {
     label: "화염 감지",
     icon: "🔥",
-    target: { inTemp: 78, outTemp: 42, inFlow: 9.8, outFlow: 9.7, pressure: 305, flame: 95 },
+    // flame: 99 — 위험 기준(기본 임계값 15의 6배 = 90)보다 확실히 위에 두어, 정상 지터(±6)가
+    // 섞여도 최솟값이 93으로 유지되게 함. 예전엔 95였는데 지터 폭(±6)과 겹쳐서 값이 89~90
+    // 근처로 떨어질 때마다 "위험 해제→재발생"이 반복되며 사고 이력이 중복 생성되는 문제가 있었다.
+    target: { inTemp: 78, outTemp: 42, inFlow: 9.8, outFlow: 9.7, pressure: 305, flame: 99 },
   },
   overPressure: {
     label: "과압 위험",
