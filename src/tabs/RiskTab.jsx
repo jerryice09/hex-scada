@@ -3,7 +3,7 @@ import { Clock } from "lucide-react";
 import { COLORS, STATUS_META } from "../data/constants";
 import RiskGauge from "../components/RiskGauge";
 
-const SENSOR_KEY_MAP = { inTemp: "sensor_inTemp", outTemp: "sensor_outTemp", inFlow: "sensor_inFlow", outFlow: "sensor_outFlow", pressure: "sensor_pressure", flame: "sensor_flame" };
+const SENSOR_KEY_MAP = { inTemp: "sensor_inTemp", outTemp: "sensor_outTemp", inFlow: "sensor_inFlow", outFlow: "sensor_outFlow", pressure: "sensor_pressure" };
 const STATUS_KEYS = ["status_normal", "status_caution", "status_warning", "status_danger"];
 const RISK_BUCKET_KEYS = { safe: "risk_bucket_safe", caution: "status_caution", warning: "status_warning", danger: "status_danger" };
 

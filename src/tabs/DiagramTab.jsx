@@ -9,12 +9,11 @@ import HeatExchanger3D from "../components/HeatExchanger3D";
 const SOP_AFFECTED_PINS = {
   WATER_HAMMER: ["drain", "in"], // 드레인 밸브 개방 + 입구 증기 공급 감소
   OVER_PRESSURE: ["vent", "in"], // 압력 릴리프 밸브(벤트) 작동 + 공급 차단(입구)
-  FIRE_DETECTED: ["flame"], // 화염 감지 구역 자체가 대응 지점
   HEAT_FAULT: ["in", "out"], // 유량밸브 점검(입구) + 열교환 효율 재측정(출구)
 };
 
-const PIN_LABEL_KEYS = { in: "pin_in", out: "pin_out", vent: "pin_vent", drain: "pin_drain", flame: "pin_flame" };
-const PIN_DESC_KEYS = { in: "desc_in", out: "desc_out", vent: "desc_vent", drain: "desc_drain", flame: "desc_flame" };
+const PIN_LABEL_KEYS = { in: "pin_in", out: "pin_out", vent: "pin_vent", drain: "pin_drain" };
+const PIN_DESC_KEYS = { in: "desc_in", out: "desc_out", vent: "desc_vent", drain: "desc_drain" };
 const STATUS_KEYS = ["status_normal", "status_caution", "status_warning", "status_danger"];
 
 // 문제점 개선: 기존에는 추상화된 SVG 배관도라서 실제 밸브 위치를 알기 어려웠다.
@@ -29,7 +28,6 @@ export default function DiagramTab({ paramLevel, dangerCodes, t }) {
     out: Math.max(paramLevel.outTemp, heatFault ? 3 : 0),
     vent: paramLevel.pressure,
     drain: paramLevel.outFlow,
-    flame: paramLevel.flame,
   };
 
   // 2단계: 현재 활성화된 위험 시나리오의 SOP 대응 위치를 전부 위험(3)으로 강제 강조.
@@ -41,7 +39,7 @@ export default function DiagramTab({ paramLevel, dangerCodes, t }) {
     });
   });
 
-  const sectionKeys = ["in", "out", "vent", "drain", "flame"];
+  const sectionKeys = ["in", "out", "vent", "drain"];
 
   return (
     <section className="rounded-lg p-4" style={{ background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}` }}>
@@ -56,7 +54,7 @@ export default function DiagramTab({ paramLevel, dangerCodes, t }) {
 
       <HeatExchanger3D levels={levels} t={t} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-2 mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 mt-4">
         {sectionKeys.map((key) => {
           const level = levels[key];
           const meta = STATUS_META[level];

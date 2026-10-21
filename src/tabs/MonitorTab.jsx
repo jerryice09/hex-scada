@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from "recharts";
-import { Power, RotateCcw, Thermometer, Droplets, Gauge, Flame } from "lucide-react";
+import { Power, RotateCcw, Thermometer, Droplets, Gauge } from "lucide-react";
 import { COLORS, UNITS, SCENARIOS } from "../data/constants";
 import { fmt } from "../utils/calculations";
 import SensorCard from "../components/SensorCard";
@@ -8,11 +8,10 @@ import SensorCard from "../components/SensorCard";
 const SCENARIO_LABEL_KEYS = {
   normal: "scenario_normal",
   waterHammer: "scenario_waterHammer",
-  fireDetected: "scenario_fireDetected",
   overPressure: "scenario_overPressure",
   heatExchangeFault: "scenario_heatExchangeFault",
 };
-const SENSOR_KEY_MAP = { inTemp: "sensor_inTemp", outTemp: "sensor_outTemp", inFlow: "sensor_inFlow", outFlow: "sensor_outFlow", pressure: "sensor_pressure", flame: "sensor_flame" };
+const SENSOR_KEY_MAP = { inTemp: "sensor_inTemp", outTemp: "sensor_outTemp", inFlow: "sensor_inFlow", outFlow: "sensor_outFlow", pressure: "sensor_pressure" };
 const STATUS_KEYS = ["status_normal", "status_caution", "status_warning", "status_danger"];
 
 export default function MonitorTab({ values, paramLevel, faultMap, thresholds, history, activeScenario, isTransitioning, runScenario, incidents, hwMode, t }) {
@@ -95,13 +94,12 @@ export default function MonitorTab({ values, paramLevel, faultMap, thresholds, h
         <h2 className="text-xs uppercase tracking-widest mb-2" style={{ color: COLORS.textDim }}>
           {t("sensor_panel_title")}
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
           <SensorCard icon={Thermometer} label={t(SENSOR_KEY_MAP.inTemp)} value={fmt(values.inTemp)} unit="℃" sub={sensorSub("inTemp")} level={paramLevel.inTemp} fault={faultMap.inTemp} statusLabel={t(STATUS_KEYS[paramLevel.inTemp])} faultNote={t("fault_card_note")} />
           <SensorCard icon={Thermometer} label={t(SENSOR_KEY_MAP.outTemp)} value={fmt(values.outTemp)} unit="℃" sub={sensorSub("outTemp")} level={paramLevel.outTemp} fault={faultMap.outTemp} statusLabel={t(STATUS_KEYS[paramLevel.outTemp])} faultNote={t("fault_card_note")} />
           <SensorCard icon={Droplets} label={t(SENSOR_KEY_MAP.inFlow)} value={fmt(values.inFlow, 2)} unit="L/min" sub={`${sensorSub("inFlow")} (G1/2 Brass)`} level={paramLevel.inFlow} fault={faultMap.inFlow} statusLabel={t(STATUS_KEYS[paramLevel.inFlow])} faultNote={t("fault_card_note")} />
           <SensorCard icon={Droplets} label={t(SENSOR_KEY_MAP.outFlow)} value={fmt(values.outFlow, 2)} unit="L/min" sub={`${sensorSub("outFlow")} (YF-S201)`} level={paramLevel.outFlow} fault={faultMap.outFlow} statusLabel={t(STATUS_KEYS[paramLevel.outFlow])} faultNote={t("fault_card_note")} />
           <SensorCard icon={Gauge} label={t(SENSOR_KEY_MAP.pressure)} value={fmt(values.pressure, 0)} unit="kPa" sub={sensorSub("pressure")} level={paramLevel.pressure} fault={faultMap.pressure} statusLabel={t(STATUS_KEYS[paramLevel.pressure])} faultNote={t("fault_card_note")} />
-          <SensorCard icon={Flame} label={t(SENSOR_KEY_MAP.flame)} value={fmt(values.flame, 0)} unit="%" sub={`${t("status_danger")} ${thresholds.flame.max * 6}% >`} level={paramLevel.flame} fault={faultMap.flame} statusLabel={t(STATUS_KEYS[paramLevel.flame])} faultNote={t("fault_card_note")} />
         </div>
       </section>
 

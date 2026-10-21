@@ -2,7 +2,7 @@
 // ESP32 → POST /api/ingest  (헤더: x-api-key, 바디: JSON 센서값)
 import { redisSet } from "./_redis.js";
 
-const SENSOR_KEYS = ["inTemp", "outTemp", "inFlow", "outFlow", "pressure", "flame"];
+const SENSOR_KEYS = ["inTemp", "outTemp", "inFlow", "outFlow", "pressure"];
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {

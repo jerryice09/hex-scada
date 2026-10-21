@@ -4,7 +4,6 @@
 
   사용 부품 (BOM, README.md "하드웨어 구성" 참고):
     - DHT-22(AM2302) 온습도 센서 모듈       → 온도 측정 (입구 온도 1개소만 측정 가능, 아래 주석 참고)
-    - 화염 불꽃 감지 센서 모듈                → 화염 감지 강도 (0~100%로 정규화, 대시보드의 "화염 감지" 지표)
     - 아두이노 유량측정센서 (G1/2 Brass, YF-S201) → 입구/출구 유량 (펄스 카운팅, 기존과 동일)
     - 아두이노 능동 부저 5V                   → 위험 감지 시 현장 청각 경보 (클라우드 연결과 무관하게 로컬에서도 동작)
     - 무지개 디지털 서보 DS3120MG             → 밸브 개폐 액추에이터 (기본은 비활성화 — 아래 안전 안내 필독)
@@ -39,8 +38,6 @@ const bool ENABLE_AUTO_VALVE_CONTROL = false;
 const int PIN_DHT22 = 4;          // DHT-22 데이터 핀
 const int PIN_FLOW_IN = 26;       // 입구 유량센서 펄스 (G1/2 Brass)
 const int PIN_FLOW_OUT = 27;      // 출구 유량센서 펄스 (YF-S201)
-const int PIN_FLAME_ANALOG = 34;  // 화염센서 아날로그 출력 (ADC1, 입력 전용 핀)
-const int PIN_FLAME_DIGITAL = 14; // 화염센서 디지털 출력 (참고용, 모듈 포텐셔미터로 임계값 조정됨)
 const int PIN_PRESSURE = 32;      // 압력 센서 자리표시자 (ADC1) — 현재 BOM에 실제 압력센서 없음
 const int PIN_BUZZER = 25;        // 능동 부저 (디지털 출력)
 const int PIN_SERVO = 33;         // 서보(DS3120MG) 신호선 (PWM)
@@ -60,7 +57,6 @@ const int SERVO_CLOSED_ANGLE = 0;
 const float NOMINAL_FLOW_LPM = 10.0;
 const float FLOW_DANGER_DROP_PCT = 30.0;   // 30% 이상 감소 시 위험(워터해머링)
 const float PRESSURE_DANGER_KPA = 500.0;   // 500kPa 초과 시 위험(과압) — 압력센서 미장착 상태에서는 참고용
-const float FLAME_DANGER_PERCENT = 90.0;   // 화염 강도 90% 초과 시 위험(화재) — DEFAULT_THRESHOLDS.flame.max(15) * 6
 
 volatile long pulseCountIn = 0;
 volatile long pulseCountOut = 0;
@@ -80,7 +76,6 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(PIN_FLOW_IN), onPulseIn, RISING);
   attachInterrupt(digitalPinToInterrupt(PIN_FLOW_OUT), onPulseOut, RISING);
 
-  pinMode(PIN_FLAME_DIGITAL, INPUT);
   pinMode(PIN_BUZZER, OUTPUT);
   digitalWrite(PIN_BUZZER, LOW);
 
@@ -115,19 +110,6 @@ float readOutTempC(float inTempFallback) {
   return inTempFallback;
 }
 
-// 화염센서 아날로그 원시값 → 0~100% 정규화.
-// ⚠ 모듈에 따라 "불꽃이 가까울수록 전압이 낮아지는" 경우가 많습니다.
-//    아래는 그 가정(낮을수록 위험)으로 반전(invert)한 예시이니, 실제 모듈로
-//    라이터를 가까이/멀리 대보며 시리얼 출력을 확인하고 map()의 방향을 맞추세요.
-float readFlamePercent(int pin) {
-  int raw = analogRead(pin); // ESP32 ADC: 0~4095
-  int inverted = 4095 - raw; // 값이 작을수록(불꽃 근접) → 백분율은 커지도록 반전
-  float pct = (inverted / 4095.0) * 100.0;
-  if (pct < 0) pct = 0;
-  if (pct > 100) pct = 100;
-  return pct;
-}
-
 // TODO: 실제 압력 센서 장착 후 데이터시트 기준 변환식으로 교체
 float readPressureKpa(int pin) {
   int raw = analogRead(pin);
@@ -136,12 +118,11 @@ float readPressureKpa(int pin) {
 
 // 로컬(오프라인) 위험 판단: WiFi/클라우드가 끊겨도 부저는 동작하도록 ESP32에서 직접 계산.
 // 대시보드의 evaluateStatus()를 간소화한 버전이며, 출구온도 미측정으로 "열교환 이상"은 제외됨.
-bool isLocalDanger(float outFlowLpm, float pressureKpa, float flamePercent) {
+bool isLocalDanger(float outFlowLpm, float pressureKpa) {
   float flowDropPct = ((NOMINAL_FLOW_LPM - outFlowLpm) / NOMINAL_FLOW_LPM) * 100.0;
   bool waterHammer = flowDropPct >= FLOW_DANGER_DROP_PCT;
   bool overPressure = pressureKpa > PRESSURE_DANGER_KPA;
-  bool fireDetected = flamePercent > FLAME_DANGER_PERCENT;
-  return waterHammer || overPressure || fireDetected;
+  return waterHammer || overPressure;
 }
 
 void loop() {
@@ -165,10 +146,9 @@ void loop() {
   }
   float outTemp = readOutTempC(inTemp);
   float pressure = readPressureKpa(PIN_PRESSURE);
-  float flame = readFlamePercent(PIN_FLAME_ANALOG);
 
   // ---- 로컬 부저 경보 (WiFi 상태와 무관하게 항상 동작) ----
-  bool danger = isLocalDanger(outFlow, pressure, flame);
+  bool danger = isLocalDanger(outFlow, pressure);
   digitalWrite(PIN_BUZZER, danger ? HIGH : LOW);
 
   // ---- 서보 밸브 제어 (기본 비활성화, ENABLE_AUTO_VALVE_CONTROL로만 활성화) ----
@@ -194,8 +174,7 @@ void loop() {
   json += "\"outTemp\":" + String(outTemp, 2) + ",";
   json += "\"inFlow\":" + String(inFlow, 2) + ",";
   json += "\"outFlow\":" + String(outFlow, 2) + ",";
-  json += "\"pressure\":" + String(pressure, 1) + ",";
-  json += "\"flame\":" + String(flame, 1);
+  json += "\"pressure\":" + String(pressure, 1);
   json += "}";
 
   int code = http.POST(json);

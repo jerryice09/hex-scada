@@ -16,17 +16,15 @@ const PIN_POSITIONS = {
   out: [201.5, 0, 57],
   vent: [-172.5, 0, 57],
   drain: [172.5, 0, -57],
-  flame: [0, 0, 66],
 };
 
 // 3D 뷰 위에 항상 떠 있는 짧은 라벨 텍스트 (핀이 작아서 안 보이는 문제 보완)
-// 언어 무관하게 영문 약어로 고정 표기 (IN/OUT/VENT/DRAIN/FLAME)
+// 언어 무관하게 영문 약어로 고정 표기 (IN/OUT/VENT/DRAIN)
 const PIN_SHORT_LABELS = {
   in: "IN",
   out: "OUT",
   vent: "VENT",
   drain: "DRAIN",
-  flame: "FLAME",
 };
 
 // 라벨을 핀 위치에서 살짝 띄워서 모델과 겹치지 않게 배치 (상단 포트는 위로, 하단 드레인은 아래로)
@@ -35,7 +33,6 @@ const LABEL_POSITIONS = {
   out: [201.5, 0, 82],
   vent: [-172.5, 0, 82],
   drain: [172.5, 0, -82],
-  flame: [0, 0, 92],
 };
 
 export default function HeatExchanger3D({ levels, t }) {
@@ -62,7 +59,7 @@ export default function HeatExchanger3D({ levels, t }) {
     renderer.setSize(mount.clientWidth, mount.clientHeight);
     mount.appendChild(renderer.domElement);
 
-    // 라벨(IN/OUT/VENT/DRAIN/FLAME) 오버레이 렌더러 — 항상 화면에 보이는 2D 텍스트 태그
+    // 라벨(IN/OUT/VENT/DRAIN) 오버레이 렌더러 — 항상 화면에 보이는 2D 텍스트 태그
     const labelRenderer = new CSS2DRenderer();
     labelRenderer.setSize(mount.clientWidth, mount.clientHeight);
     labelRenderer.domElement.style.position = "absolute";

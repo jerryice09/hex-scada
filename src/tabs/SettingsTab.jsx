@@ -3,7 +3,7 @@ import { Settings as SettingsIcon, Save, Undo2, Wifi, WifiOff } from "lucide-rea
 import { COLORS } from "../data/constants";
 import ThresholdRow from "../components/ThresholdRow";
 
-const SENSOR_KEY_MAP = { inTemp: "sensor_inTemp", outTemp: "sensor_outTemp", inFlow: "sensor_inFlow", outFlow: "sensor_outFlow", pressure: "sensor_pressure", flame: "sensor_flame" };
+const SENSOR_KEY_MAP = { inTemp: "sensor_inTemp", outTemp: "sensor_outTemp", inFlow: "sensor_inFlow", outFlow: "sensor_outFlow", pressure: "sensor_pressure" };
 
 // draftThresholds/setDraftThresholds: 입력 중인 값 (아직 미적용)
 // onSave/onReset: App.jsx에서 검증 후 실제 thresholds 상태에 반영하는 핸들러
@@ -53,7 +53,6 @@ export default function SettingsTab({ draftThresholds, setDraftThresholds, onSav
         <ThresholdRow label={t(SENSOR_KEY_MAP.inFlow)} unit="L/min" keyName="inFlow" draft={draftThresholds} setDraftThresholds={setDraftThresholds} t={t} />
         <ThresholdRow label={t(SENSOR_KEY_MAP.outFlow)} unit="L/min" keyName="outFlow" draft={draftThresholds} setDraftThresholds={setDraftThresholds} t={t} />
         <ThresholdRow label={t(SENSOR_KEY_MAP.pressure)} unit="kPa" keyName="pressure" draft={draftThresholds} setDraftThresholds={setDraftThresholds} t={t} />
-        <ThresholdRow label={t(SENSOR_KEY_MAP.flame)} unit="%" keyName="flame" draft={draftThresholds} setDraftThresholds={setDraftThresholds} t={t} />
       </div>
 
       {/* 하한 ≥ 상한, 빈 값 등 저장 직전 검증에 실패하면 표시되는 에러 목록 */}

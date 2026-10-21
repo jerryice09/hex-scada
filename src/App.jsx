@@ -101,7 +101,6 @@ export default function HeatExchangerSCADA() {
     inFlow: isSensorFault("inFlow", values.inFlow, thresholds),
     outFlow: isSensorFault("outFlow", values.outFlow, thresholds),
     pressure: isSensorFault("pressure", values.pressure, thresholds),
-    flame: isSensorFault("flame", values.flame, thresholds),
   };
 
   const status = evaluateStatus(values, thresholds, faultMap);
@@ -144,7 +143,6 @@ export default function HeatExchangerSCADA() {
         inFlow: Math.max(0, jitter(baseline.inFlow, 0.18)),
         outFlow: Math.max(0, jitter(baseline.outFlow, 0.18)),
         pressure: jitter(baseline.pressure, 4),
-        flame: Math.max(0, Math.min(100, jitter(baseline.flame, baseline.flame > 50 ? 6 : 1.5))),
       }));
     }, TICK_MS);
     return () => clearInterval(id);
@@ -172,7 +170,6 @@ export default function HeatExchangerSCADA() {
             inFlow: data.values.inFlow,
             outFlow: data.values.outFlow,
             pressure: data.values.pressure,
-            flame: data.values.flame,
           });
           setHwOnline(true);
           setHwLastSeen(data.lastSeen);
@@ -218,7 +215,6 @@ export default function HeatExchangerSCADA() {
             inFlow: Number(v.inFlow.toFixed(2)),
             outFlow: Number(v.outFlow.toFixed(2)),
             pressure: Number(v.pressure.toFixed(1)),
-            flame: Number(v.flame.toFixed(1)),
           },
         ];
         return next.length > MAX_CHART_HISTORY ? next.slice(next.length - MAX_CHART_HISTORY) : next;
@@ -265,7 +261,7 @@ export default function HeatExchangerSCADA() {
         };
         setIncidents((prev) => [incident, ...prev].slice(0, MAX_INCIDENT_HISTORY));
         // 큐에 넣을 때 우선순위(PRIORITY_ORDER)순으로 정렬해, 나중에 들어와도
-        // 더 급한 사고(화염감지 등)의 SOP가 먼저 뜨도록 한다.
+        // 더 급한 사고(과압 등)의 SOP가 먼저 뜨도록 한다.
         setSopQueue((prev) => [...prev, { id, priority: PRIORITY_ORDER[m.code] }].sort((a, b) => a.priority - b.priority));
       }
     });
@@ -328,7 +324,6 @@ export default function HeatExchangerSCADA() {
           inFlow: lerp(start.inFlow, target.inFlow, eased),
           outFlow: lerp(start.outFlow, target.outFlow, eased),
           pressure: lerp(start.pressure, target.pressure, eased),
-          flame: lerp(start.flame, target.flame, eased),
         });
 
         if (t >= 1) {
@@ -388,7 +383,6 @@ export default function HeatExchangerSCADA() {
       { key: "inFlow", already: paramLevel.inFlow === 3, fault: faultMap.inFlow, slope: linRegSlope(get("inFlow")) },
       { key: "outFlow", already: paramLevel.outFlow === 3, fault: faultMap.outFlow, slope: linRegSlope(get("outFlow")) },
       { key: "pressure", already: paramLevel.pressure === 3, fault: faultMap.pressure, slope: linRegSlope(get("pressure")) },
-      { key: "flame", already: paramLevel.flame === 3, fault: faultMap.flame, slope: linRegSlope(get("flame")) },
     ].map((r) => {
       if (r.fault) return { ...r, ticks: Infinity, minutes: Infinity };
       let ticks;
@@ -402,11 +396,9 @@ export default function HeatExchangerSCADA() {
       } else if (r.key === "inFlow" || r.key === "outFlow") {
         const nominal = nominalOf(r.key, thresholds) || 1;
         ticks = ticksToLowerThreshold(values[r.key], r.slope, nominal * 0.7, 0.07);
-      } else if (r.key === "pressure") {
+      } else {
         const { min, max } = thresholds.pressure;
         ticks = ticksToUpperThreshold(values.pressure, r.slope, max + (max - min) * 0.5, 1.8);
-      } else {
-        ticks = ticksToUpperThreshold(values.flame, r.slope, thresholds.flame.max * 6, 2.5);
       }
       return { ...r, ticks, minutes: r.already ? 0 : ticks === Infinity ? Infinity : ticks / 60 };
     });

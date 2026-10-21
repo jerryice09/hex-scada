@@ -53,7 +53,7 @@ export function ticksToLowerThreshold(current, slope, threshold, minSlope = 1e-4
   const ticks = (threshold - current) / slope;
   return ticks > 0 ? ticks : Infinity;
 }
-// 상한(압력·화염감지 상승) 임계값까지 남은 예상 초 계산. 감소 추세면 Infinity.
+// 상한(압력 상승) 임계값까지 남은 예상 초 계산. 감소 추세면 Infinity.
 export function ticksToUpperThreshold(current, slope, threshold, minSlope = 1e-4) {
   if (slope <= minSlope) return Infinity;
   const ticks = (threshold - current) / slope;
@@ -110,12 +110,6 @@ export function calcParamLevel(key, value, thresholds) {
     if (value < min) return 1;
     return 0;
   }
-  if (key === "flame") {
-    if (value > max * 6) return 3;
-    if (value > max * 3) return 2;
-    if (value > max) return 1;
-    return 0;
-  }
   return 0;
 }
 
@@ -135,7 +129,6 @@ export function evaluateStatus(values, thresholds, faultMap) {
     inFlow: level("inFlow"),
     outFlow: level("outFlow"),
     pressure: level("pressure"),
-    flame: level("flame"),
   };
 
   const dangerMessages = [];
@@ -145,17 +138,14 @@ export function evaluateStatus(values, thresholds, faultMap) {
   if (paramLevel.inTemp === 3 && paramLevel.outTemp === 3) {
     dangerMessages.push({ code: "HEAT_FAULT", text: "⚠ 열교환 이상 감지 — 누출 또는 내부 파손 가능성. 긴급 점검 필요" });
   }
-  if (paramLevel.flame === 3) {
-    dangerMessages.push({ code: "FIRE_DETECTED", text: "⚠ 화염 감지 — 화재 위험. 즉시 해당 구역 대피 및 초동 조치 필요" });
-  }
   if (paramLevel.pressure === 3) {
     dangerMessages.push({ code: "OVER_PRESSURE", text: "⚠ 과압 감지 — 배관 파열 위험. 긴급 압력 릴리프 밸브 작동 확인" });
   }
 
-  // 인명피해 가능성 기준 우선순위 정렬 (화염감지 > 과압 > 워터해머링 > 열교환이상)
+  // 인명피해 가능성 기준 우선순위 정렬 (과압 > 워터해머링 > 열교환이상)
   dangerMessages.sort((a, b) => PRIORITY_ORDER[a.code] - PRIORITY_ORDER[b.code]);
 
-  const overallLevel = Math.max(paramLevel.inTemp, paramLevel.outTemp, paramLevel.inFlow, paramLevel.outFlow, paramLevel.pressure, paramLevel.flame);
+  const overallLevel = Math.max(paramLevel.inTemp, paramLevel.outTemp, paramLevel.inFlow, paramLevel.outFlow, paramLevel.pressure);
 
   return { level: overallLevel, dangerMessages, paramLevel };
 }
@@ -166,13 +156,13 @@ export function getRefBadges(code, values, thresholds) {
   const flowAnomaly =
     calcParamLevel("inFlow", values.inFlow, thresholds) >= 1 || calcParamLevel("outFlow", values.outFlow, thresholds) >= 1;
   if (code === "OVER_PRESSURE" && flowAnomaly) badges.push("⚡ 여천 NCC 2024 유사 패턴");
-  if (code === "FIRE_DETECTED") badges.push("⚡ 초기 화재 골든타임 — 5분 이내 초동조치 권장");
   if (code === "WATER_HAMMER") badges.push("⚡ 배관 파열 선행 징후 유형");
   return badges;
 }
 
-// Risk Score 0~100 계산 (유량30% + 압력25% + 온도25% + 화염20%)
-// 센서 오류로 제외된 항목이 있으면 남은 항목의 가중치 합으로 재정규화한다.
+// Risk Score 0~100 계산 (유량40% + 압력30% + 온도30%)
+// 화염 센서가 제거되면서 원래 화염 20%였던 가중치를 나머지 3개 항목에 비례 재분배했다.
+// 센서 오류로 제외된 항목이 있으면 남은 항목의 가중치 합으로 다시 재정규화한다.
 export function computeRiskScore(values, thresholds, faultMap) {
   let weighted = 0;
   let totalWeight = 0;
@@ -184,15 +174,15 @@ export function computeRiskScore(values, thresholds, faultMap) {
       return Math.max(0, ((nominal - values[k]) / nominal) * 100);
     });
     const flowDev = clamp((Math.max(...drops) / 40) * 100, 0, 100);
-    weighted += flowDev * 0.3;
-    totalWeight += 0.3;
+    weighted += flowDev * 0.4;
+    totalWeight += 0.4;
   }
 
   if (!faultMap.pressure) {
     const center = nominalOf("pressure", thresholds) || 1;
     const pressureDev = clamp((Math.abs(values.pressure - center) / center) * 100, 0, 100);
-    weighted += pressureDev * 0.25;
-    totalWeight += 0.25;
+    weighted += pressureDev * 0.3;
+    totalWeight += 0.3;
   }
 
   const tempKeys = ["inTemp", "outTemp"].filter((k) => !faultMap[k]);
@@ -203,15 +193,8 @@ export function computeRiskScore(values, thresholds, faultMap) {
       const rangeHalf = (max - min) / 2 || 1;
       return clamp((Math.abs(values[k] - nominal) / (rangeHalf * 4)) * 100, 0, 100);
     });
-    weighted += Math.max(...devs) * 0.25;
-    totalWeight += 0.25;
-  }
-
-  if (!faultMap.flame) {
-    const dangerFlame = thresholds.flame.max * 6 || 1;
-    const flameDev = clamp((values.flame / dangerFlame) * 100, 0, 100);
-    weighted += flameDev * 0.2;
-    totalWeight += 0.2;
+    weighted += Math.max(...devs) * 0.3;
+    totalWeight += 0.3;
   }
 
   return Math.round(clamp(totalWeight > 0 ? weighted / totalWeight : 0, 0, 100));
@@ -227,7 +210,7 @@ export function riskBucket(score) {
 // ------------------------------------------------------------
 // 설정 탭 저장 시 사용하는 임계값 유효성 검증
 // 문제점 수정: 기존 코드는 입력값을 검증 없이 그대로 반영해 min > max,
-// 음수 유량/압력/화염감지 같은 물리적으로 말이 안 되는 값도 저장할 수 있었다.
+// 음수 유량/압력 같은 물리적으로 말이 안 되는 값도 저장할 수 있었다.
 // ------------------------------------------------------------
 export function validateThresholds(draft) {
   const errors = [];
