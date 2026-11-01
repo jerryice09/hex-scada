@@ -4,13 +4,22 @@ import { COLORS, STATUS_META } from "../data/constants";
 // 센서 하나의 실시간 값을 보여주는 카드.
 // fault가 true면 값 대신 "SENSOR FAULT"를 회색으로 표시하고 레벨 색상은 무시한다.
 // statusLabel/faultNote: 다국어 지원을 위해 호출측(MonitorTab)에서 t()로 번역해 전달한다.
-// large: "크게 보기" 모드. 현장 모니터를 몇 걸음 떨어져서 봐도 숫자가 읽히도록
-//        값·단위·라벨·상태 배지를 모두 키우고, 정상이 아닐 때는 숫자 자체를 상태 색으로 칠한다.
+// large: "크게 보기" 모드. 카드 크기·배치·라벨은 그대로 두고 센서 값 숫자만 크게 키워
+//        현장 모니터를 몇 걸음 떨어져서 봐도 읽히게 한다. 정상이 아닐 때는 숫자 자체를 상태 색으로 칠한다.
 export default function SensorCard({ icon: Icon, label, value, unit, sub, level, fault, statusLabel, faultNote, large = false }) {
   // 기본/크게 보기 두 가지 크기를 한곳에서 정의해 두면 아래 마크업이 단순해진다.
-  const size = large
-    ? { pad: "p-5", gap: "gap-3", icon: 22, label: "text-base", badge: "text-sm px-2.5 py-1", value: "text-6xl", unit: "text-xl", sub: "text-sm", accent: "5px" }
-    : { pad: "p-4", gap: "gap-2", icon: 15, label: "text-xs", badge: "text-[10px] px-1.5 py-0.5", value: "text-2xl", unit: "text-xs", sub: "text-[11px]", accent: "3px" };
+  // 값(value)·단위(unit)만 크게 보기 여부에 따라 달라지고, 나머지는 항상 기본 크기다.
+  const size = {
+    pad: "p-4",
+    gap: "gap-2",
+    icon: 15,
+    label: "text-xs",
+    badge: "text-[10px] px-1.5 py-0.5",
+    value: large ? "text-4xl sm:text-5xl" : "text-2xl",
+    unit: large ? "text-base" : "text-xs",
+    sub: "text-[11px]",
+    accent: "3px",
+  };
 
   if (fault) {
     return (
@@ -30,7 +39,7 @@ export default function SensorCard({ icon: Icon, label, value, unit, sub, level,
           </span>
         </div>
         <div className="flex items-baseline gap-1">
-          <span className={`font-mono ${large ? "text-5xl" : "text-xl"} font-semibold`} style={{ color: COLORS.textMid }}>
+          <span className={`font-mono ${large ? "text-4xl sm:text-5xl" : "text-xl"} font-semibold`} style={{ color: COLORS.textMid }}>
             — —
           </span>
         </div>
@@ -60,7 +69,7 @@ export default function SensorCard({ icon: Icon, label, value, unit, sub, level,
           {statusLabel}
         </span>
       </div>
-      <div className="flex items-baseline gap-1.5">
+      <div className="flex items-baseline flex-wrap gap-x-1.5">
         <span className={`font-mono ${size.value} ${large ? "font-bold leading-none" : "font-semibold"} tabular-nums`} style={{ color: valueColor }}>
           {value}
         </span>

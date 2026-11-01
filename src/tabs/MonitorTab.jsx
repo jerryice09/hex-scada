@@ -112,8 +112,8 @@ export default function MonitorTab({ values, paramLevel, faultMap, thresholds, h
             </button>
           )}
         </div>
-        {/* 크게 보기일 때는 한 줄에 들어가는 카드 수를 줄여 숫자가 넉넉히 들어갈 공간을 만든다 */}
-        <div className={largeView ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4" : "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3"}>
+        {/* 크게 보기여도 카드 배치는 그대로 두고, 카드 안의 숫자만 커진다 */}
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
           <SensorCard icon={Thermometer} label={t(SENSOR_KEY_MAP.inTemp)} value={fmt(values.inTemp)} unit="℃" sub={sensorSub("inTemp")} level={paramLevel.inTemp} fault={faultMap.inTemp} statusLabel={t(STATUS_KEYS[paramLevel.inTemp])} faultNote={t("fault_card_note")} large={largeView} />
           <SensorCard icon={Thermometer} label={t(SENSOR_KEY_MAP.outTemp)} value={fmt(values.outTemp)} unit="℃" sub={sensorSub("outTemp")} level={paramLevel.outTemp} fault={faultMap.outTemp} statusLabel={t(STATUS_KEYS[paramLevel.outTemp])} faultNote={t("fault_card_note")} large={largeView} />
           <SensorCard icon={Droplets} label={t(SENSOR_KEY_MAP.inFlow)} value={fmt(values.inFlow, 2)} unit="L/min" sub={`${sensorSub("inFlow")} (G1/2 Brass)`} level={paramLevel.inFlow} fault={faultMap.inFlow} statusLabel={t(STATUS_KEYS[paramLevel.inFlow])} faultNote={t("fault_card_note")} large={largeView} />
