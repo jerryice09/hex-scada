@@ -5,13 +5,21 @@
 // ============================================================
 
 // SCADA/HMI 밝은 톤 팔레트 (산업 안전표지 색 언어 기준: 스틸블루/그린/오렌지/레드)
+// 화면 바탕·패널·글자색은 CSS 변수(src/index.css)로 관리한다.
+// 라이트/다크 테마를 바꾸면 <html data-theme="..."> 값만 바뀌고, 아래 변수들이 자동으로 다른 색을 가리킨다.
+// ⚠ CSS 변수는 뒤에 투명도 hex("33" 등)를 붙일 수 없으므로, `${COLORS.x}33` 형태는 아래 상태 색상(고정 hex)에만 쓴다.
 export const COLORS = {
-  bg: "#f8fafc",
-  panel: "#ffffff",
-  panelBorder: "#e2e8f0",
-  panelBorderLit: "#cbd5e1",
-  textPrimary: "#0f172a",
-  textDim: "#64748b",
+  bg: "var(--c-bg)",
+  panel: "var(--c-panel)",
+  panelSoft: "var(--c-panel-soft)", // 패널 안의 옅은 박스(버튼·리스트 행 배경)
+  panelMuted: "var(--c-panel-muted)", // 진행바 트랙·비활성 버튼 등 한 단계 더 진한 배경
+  accentSoft: "var(--c-accent-soft)", // 선택된 항목의 옅은 파란 배경
+  panelBorder: "var(--c-panel-border)",
+  panelBorderLit: "var(--c-panel-border-lit)",
+  textPrimary: "var(--c-text)",
+  textMid: "var(--c-text-mid)",
+  textDim: "var(--c-text-dim)",
+  dangerText: "var(--c-danger-text)", // 경보 문구 글자색 (라이트: 진한 빨강, 다크: 밝은 빨강)
   cyan: "#0ea5e9",
   normal: "#16a34a",
   caution: "#ca8a04",

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Activity, Wifi, WifiOff } from "lucide-react";
+import { Activity, Wifi, WifiOff, Sun, Moon } from "lucide-react";
 import "./styles/scada.css";
 import { LOCALES, translate } from "./data/i18n";
 
@@ -47,6 +47,22 @@ import HistoryTab from "./tabs/HistoryTab";
 import ManualTab from "./tabs/ManualTab";
 import SettingsTab from "./tabs/SettingsTab";
 
+// 브라우저 저장소 읽기/쓰기. 저장이 막힌 환경(시크릿 창, 미리보기 등)에서는 기본값으로 동작한다.
+function readPref(key, fallback) {
+  try {
+    return window.localStorage.getItem(key) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+function writePref(key, value) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    /* 저장 실패는 무시: 화면 동작에는 영향 없음 */
+  }
+}
+
 export default function HeatExchangerSCADA() {
   const [values, setValues] = useState({ ...NORMAL_BASELINE });
   const [baseline, setBaseline] = useState({ ...NORMAL_BASELINE });
@@ -59,6 +75,20 @@ export default function HeatExchangerSCADA() {
 
   // 다국어 지원: 기본 한국어, 영어/베트남어 전환 가능
   const [locale, setLocale] = useState("ko");
+
+  // ---- 화면 표시 설정 (사용자별 편의 기능) ----
+  // theme: "light"(기본, 밝은 화면) / "dark"(처음 버전의 어두운 SCADA 화면)
+  // largeView: 센서 값 숫자를 크게 키워 멀리서도 읽을 수 있게 하는 모드
+  // 두 값 모두 브라우저에 저장해 새로고침해도 유지한다. (시크릿 창 등 저장이 막힌 환경에서도 앱이 죽지 않도록 try/catch)
+  const [theme, setTheme] = useState(() => readPref("hex-scada-theme", "light"));
+  const [largeView, setLargeView] = useState(() => readPref("hex-scada-large-view", "off") === "on");
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    writePref("hex-scada-theme", theme);
+  }, [theme]);
+  useEffect(() => {
+    writePref("hex-scada-large-view", largeView ? "on" : "off");
+  }, [largeView]);
   const t = useCallback((key, params) => translate(locale, key, params), [locale]);
 
   // 실시간 하드웨어(ESP32) 연동 모드 — true면 시뮬레이션 지터 대신 /api/sensors를 폴링한다.
@@ -434,7 +464,7 @@ export default function HeatExchangerSCADA() {
       <header className="w-full sticky top-0 z-40" style={{ background: COLORS.panel, borderBottom: `1px solid ${COLORS.panelBorder}` }}>
         <div className="px-5 py-3 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded flex items-center justify-center" style={{ background: "#eff6ff", border: `1px solid ${COLORS.panelBorderLit}` }}>
+            <div className="w-10 h-10 rounded flex items-center justify-center" style={{ background: COLORS.accentSoft, border: `1px solid ${COLORS.panelBorderLit}` }}>
               <Activity size={20} style={{ color: COLORS.cyan }} />
             </div>
             <div>
@@ -451,6 +481,29 @@ export default function HeatExchangerSCADA() {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
+            {/* 화면 테마 전환: 라이트 / 다크 */}
+            <div className="flex items-center rounded-md overflow-hidden" style={{ border: `1px solid ${COLORS.panelBorderLit}` }} title={t("theme_toggle_title")}>
+              {[
+                { code: "light", Icon: Sun },
+                { code: "dark", Icon: Moon },
+              ].map(({ code, Icon }) => (
+                <button
+                  key={code}
+                  onClick={() => setTheme(code)}
+                  aria-pressed={theme === code}
+                  className="text-[11px] font-mono px-2.5 py-1.5 flex items-center gap-1"
+                  style={{
+                    background: theme === code ? COLORS.cyan : "transparent",
+                    color: theme === code ? "#ffffff" : COLORS.textDim,
+                    fontWeight: theme === code ? 700 : 500,
+                  }}
+                >
+                  <Icon size={12} />
+                  {t(code === "light" ? "theme_light" : "theme_dark")}
+                </button>
+              ))}
+            </div>
+
             {/* 다국어 전환: 한국어 / English / Tiếng Việt */}
             <div className="flex items-center rounded-md overflow-hidden" style={{ border: `1px solid ${COLORS.panelBorderLit}` }}>
               {LOCALES.map((l) => (
@@ -538,7 +591,7 @@ export default function HeatExchangerSCADA() {
       {isDanger && activeTab === "monitor" && (
         <div className="w-full px-5 py-2.5 flex flex-col gap-1" style={{ background: "rgba(220,38,38,0.08)", borderBottom: `1px solid ${COLORS.danger}55` }}>
           {status.dangerMessages.map((m, idx) => (
-            <div key={m.code} className="flex items-center gap-2 text-sm font-mono" style={{ color: "#991b1b" }}>
+            <div key={m.code} className="flex items-center gap-2 text-sm font-mono" style={{ color: COLORS.dangerText }}>
               {idx === 0 && (
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: COLORS.danger, color: "#ffffff" }}>
                   {t("priority_badge")}
@@ -563,6 +616,8 @@ export default function HeatExchangerSCADA() {
             runScenario={runScenario}
             incidents={incidents}
             hwMode={hwMode}
+            largeView={largeView}
+            setLargeView={setLargeView}
             t={t}
           />
         )}

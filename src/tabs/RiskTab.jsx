@@ -101,7 +101,7 @@ export default function RiskTab({ riskScore, bucket, predictions, topPrediction,
               color = STATUS_META[currentLevel].color;
             }
             return (
-              <div key={p.key} className="flex items-center justify-between text-xs font-mono px-2 py-1.5 rounded" style={{ background: "#f1f5f9" }}>
+              <div key={p.key} className="flex items-center justify-between text-xs font-mono px-2 py-1.5 rounded" style={{ background: COLORS.panelMuted }}>
                 <span style={{ color: COLORS.textDim }}>{t(SENSOR_KEY_MAP[p.key])}</span>
                 <span style={{ color }}>{text}</span>
               </div>
@@ -122,7 +122,7 @@ export default function RiskTab({ riskScore, bucket, predictions, topPrediction,
               <span className="text-xs font-mono w-16 flex-shrink-0" style={{ color: COLORS.textDim }}>
                 {t(SENSOR_KEY_MAP[key])}
               </span>
-              <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: "#f1f5f9" }}>
+              <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: COLORS.panelMuted }}>
                 <div
                   className="h-full rounded-full"
                   style={{ width: isFault ? "100%" : `${((level + 1) / 4) * 100}%`, background: isFault ? COLORS.fault : meta.color, transition: "width 0.4s ease" }}

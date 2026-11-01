@@ -37,7 +37,7 @@ export default function HistoryTab({ incidents, unresolvedCount, resolvedCount, 
         {incidents.map((entry) => (
           <div key={entry.id} className="rounded-md p-3" style={{ background: "rgba(220,38,38,0.05)", border: `1px solid ${COLORS.danger}33` }}>
             <div className="flex items-start justify-between gap-2 flex-wrap">
-              <div className="text-sm font-mono" style={{ color: "#991b1b" }}>
+              <div className="text-sm font-mono" style={{ color: COLORS.dangerText }}>
                 <span style={{ color: COLORS.textDim }}>[{entry.time}]</span> <span className="font-semibold">{t(`code_${entry.code}`)}</span> — {t(`msg_${entry.code}`)}
               </div>
               <div className="flex gap-1.5 flex-wrap items-center">

@@ -12,7 +12,7 @@ export default function SettingsTab({ draftThresholds, setDraftThresholds, onSav
   return (
     <section className="rounded-lg p-5 flex flex-col gap-4" style={{ background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}` }}>
       {/* 데이터 소스 전환: 시뮬레이션 ↔ 실시간 하드웨어(ESP32) */}
-      <div className="rounded-md p-4 flex flex-col gap-2" style={{ background: "#f8fafc", border: `1px solid ${COLORS.panelBorder}` }}>
+      <div className="rounded-md p-4 flex flex-col gap-2" style={{ background: COLORS.panelSoft, border: `1px solid ${COLORS.panelBorder}` }}>
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             {hwMode && hwOnline ? <Wifi size={16} style={{ color: COLORS.normal }} /> : <WifiOff size={16} style={{ color: COLORS.textDim }} />}
@@ -24,7 +24,7 @@ export default function SettingsTab({ draftThresholds, setDraftThresholds, onSav
             onClick={() => setHwMode((v) => !v)}
             className="px-3 py-1.5 rounded-md text-xs font-mono font-semibold"
             style={{
-              background: hwMode ? `${COLORS.normal}22` : `${COLORS.panelBorderLit}33`,
+              background: hwMode ? `${COLORS.normal}22` : COLORS.panelMuted,
               color: hwMode ? COLORS.normal : COLORS.textDim,
               border: `1px solid ${hwMode ? COLORS.normal : COLORS.panelBorderLit}`,
             }}
@@ -57,7 +57,7 @@ export default function SettingsTab({ draftThresholds, setDraftThresholds, onSav
 
       {/* 하한 ≥ 상한, 빈 값 등 저장 직전 검증에 실패하면 표시되는 에러 목록 */}
       {validationErrors && validationErrors.length > 0 && (
-        <div className="text-xs font-mono px-3 py-2 rounded-md flex flex-col gap-1" style={{ background: `${COLORS.danger}14`, border: `1px solid ${COLORS.danger}44`, color: "#991b1b" }}>
+        <div className="text-xs font-mono px-3 py-2 rounded-md flex flex-col gap-1" style={{ background: `${COLORS.danger}14`, border: `1px solid ${COLORS.danger}44`, color: COLORS.dangerText }}>
           {validationErrors.map((e, i) => (
             <div key={i}>⚠ {e}</div>
           ))}

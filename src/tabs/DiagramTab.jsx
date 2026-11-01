@@ -59,7 +59,7 @@ export default function DiagramTab({ paramLevel, dangerCodes, t }) {
           const level = levels[key];
           const meta = STATUS_META[level];
           return (
-            <div key={key} className="text-xs font-mono px-3 py-2 rounded" style={{ background: "#f8fafc", border: `1px solid ${COLORS.panelBorder}` }}>
+            <div key={key} className="text-xs font-mono px-3 py-2 rounded" style={{ background: COLORS.panelSoft, border: `1px solid ${COLORS.panelBorder}` }}>
               <div className="font-semibold" style={{ color: COLORS.textPrimary }}>
                 {t(PIN_LABEL_KEYS[key])}
               </div>

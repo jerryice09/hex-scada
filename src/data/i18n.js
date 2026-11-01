@@ -80,6 +80,11 @@ export const STRINGS = {
 
     // 메인 모니터링
     sensor_panel_title: "실시간 센서 패널",
+    large_view_on: "크게 보기",
+    large_view_off: "기본 크기",
+    theme_light: "라이트",
+    theme_dark: "다크",
+    theme_toggle_title: "화면 테마 바꾸기",
     chart_temp_title: "온도 추이 (점선 = 경보 발생 시점)",
     chart_flow_title: "유량 추이 (점선 = 경보 발생 시점)",
     chart_mode_full: "전체",
@@ -223,6 +228,11 @@ export const STRINGS = {
     sop_confirm_button: "Confirm — Action Complete",
 
     sensor_panel_title: "Live Sensor Panel",
+    large_view_on: "Large view",
+    large_view_off: "Normal size",
+    theme_light: "Light",
+    theme_dark: "Dark",
+    theme_toggle_title: "Switch screen theme",
     chart_temp_title: "Temperature Trend (dashed = alarm occurred)",
     chart_flow_title: "Flow Trend (dashed = alarm occurred)",
     chart_mode_full: "Full",
@@ -360,6 +370,11 @@ export const STRINGS = {
     sop_confirm_button: "Xác nhận — Đã xử lý xong",
 
     sensor_panel_title: "Bảng cảm biến thời gian thực",
+    large_view_on: "Phóng to",
+    large_view_off: "Cỡ thường",
+    theme_light: "Sáng",
+    theme_dark: "Tối",
+    theme_toggle_title: "Đổi giao diện màn hình",
     chart_temp_title: "Xu hướng nhiệt độ (nét đứt = thời điểm báo động)",
     chart_flow_title: "Xu hướng lưu lượng (nét đứt = thời điểm báo động)",
     chart_mode_full: "Toàn bộ",

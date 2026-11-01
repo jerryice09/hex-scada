@@ -13,13 +13,13 @@ export default function ThresholdRow({ label, unit, keyName, draft, setDraftThre
   };
 
   return (
-    <div className="rounded-md p-3 flex flex-col gap-2" style={{ background: "#f8fafc", border: `1px solid ${COLORS.panelBorder}` }}>
+    <div className="rounded-md p-3 flex flex-col gap-2" style={{ background: COLORS.panelSoft, border: `1px solid ${COLORS.panelBorder}` }}>
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold" style={{ color: COLORS.textPrimary }}>
           {label} <span className="text-xs font-mono" style={{ color: COLORS.textDim }}>({unit})</span>
         </span>
         {/* 현재 적용 중인 기본값을 회색으로 표시 */}
-        <span className="text-[11px] font-mono" style={{ color: "#94a3b8" }}>
+        <span className="text-[11px] font-mono" style={{ color: COLORS.textDim }}>
           {t("default_value_prefix")}: {def.min} ~ {def.max}
           {unit}
         </span>

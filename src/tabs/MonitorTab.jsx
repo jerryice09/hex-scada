@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from "recharts";
-import { Power, RotateCcw, Thermometer, Droplets, Gauge } from "lucide-react";
+import { Power, RotateCcw, Thermometer, Droplets, Gauge, Maximize2, Minimize2 } from "lucide-react";
 import { COLORS, UNITS, SCENARIOS } from "../data/constants";
 import { fmt } from "../utils/calculations";
 import SensorCard from "../components/SensorCard";
@@ -14,7 +14,7 @@ const SCENARIO_LABEL_KEYS = {
 const SENSOR_KEY_MAP = { inTemp: "sensor_inTemp", outTemp: "sensor_outTemp", inFlow: "sensor_inFlow", outFlow: "sensor_outFlow", pressure: "sensor_pressure" };
 const STATUS_KEYS = ["status_normal", "status_caution", "status_warning", "status_danger"];
 
-export default function MonitorTab({ values, paramLevel, faultMap, thresholds, history, activeScenario, isTransitioning, runScenario, incidents, hwMode, t }) {
+export default function MonitorTab({ values, paramLevel, faultMap, thresholds, history, activeScenario, isTransitioning, runScenario, incidents, hwMode, largeView = false, setLargeView, t }) {
   const recentIncidents = incidents.slice(0, 10);
   // ④ 차트 경보 마커: incidents에 저장해둔 tick 번호에 세로 점선을 그린다.
   const alarmMarks = incidents.map((i) => ({ tick: i.tick, label: `${t(`code_${i.code}`)} — ${t(`msg_${i.code}`)}` }));
@@ -57,7 +57,7 @@ export default function MonitorTab({ values, paramLevel, faultMap, thresholds, h
           onClick={() => setChartMode(m.key)}
           className="text-[11px] font-mono px-2.5 py-1 rounded-full"
           style={{
-            background: chartMode === m.key ? COLORS.cyan : "#f1f5f9",
+            background: chartMode === m.key ? COLORS.cyan : COLORS.panelMuted,
             color: chartMode === m.key ? "#ffffff" : COLORS.textDim,
             border: `1px solid ${chartMode === m.key ? COLORS.cyan : COLORS.panelBorder}`,
           }}
@@ -91,15 +91,34 @@ export default function MonitorTab({ values, paramLevel, faultMap, thresholds, h
   return (
     <>
       <section>
-        <h2 className="text-xs uppercase tracking-widest mb-2" style={{ color: COLORS.textDim }}>
-          {t("sensor_panel_title")}
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
-          <SensorCard icon={Thermometer} label={t(SENSOR_KEY_MAP.inTemp)} value={fmt(values.inTemp)} unit="℃" sub={sensorSub("inTemp")} level={paramLevel.inTemp} fault={faultMap.inTemp} statusLabel={t(STATUS_KEYS[paramLevel.inTemp])} faultNote={t("fault_card_note")} />
-          <SensorCard icon={Thermometer} label={t(SENSOR_KEY_MAP.outTemp)} value={fmt(values.outTemp)} unit="℃" sub={sensorSub("outTemp")} level={paramLevel.outTemp} fault={faultMap.outTemp} statusLabel={t(STATUS_KEYS[paramLevel.outTemp])} faultNote={t("fault_card_note")} />
-          <SensorCard icon={Droplets} label={t(SENSOR_KEY_MAP.inFlow)} value={fmt(values.inFlow, 2)} unit="L/min" sub={`${sensorSub("inFlow")} (G1/2 Brass)`} level={paramLevel.inFlow} fault={faultMap.inFlow} statusLabel={t(STATUS_KEYS[paramLevel.inFlow])} faultNote={t("fault_card_note")} />
-          <SensorCard icon={Droplets} label={t(SENSOR_KEY_MAP.outFlow)} value={fmt(values.outFlow, 2)} unit="L/min" sub={`${sensorSub("outFlow")} (YF-S201)`} level={paramLevel.outFlow} fault={faultMap.outFlow} statusLabel={t(STATUS_KEYS[paramLevel.outFlow])} faultNote={t("fault_card_note")} />
-          <SensorCard icon={Gauge} label={t(SENSOR_KEY_MAP.pressure)} value={fmt(values.pressure, 0)} unit="kPa" sub={sensorSub("pressure")} level={paramLevel.pressure} fault={faultMap.pressure} statusLabel={t(STATUS_KEYS[paramLevel.pressure])} faultNote={t("fault_card_note")} />
+        <div className="flex items-center justify-between mb-2 gap-2">
+          <h2 className="text-xs uppercase tracking-widest" style={{ color: COLORS.textDim }}>
+            {t("sensor_panel_title")}
+          </h2>
+          {/* 크게 보기: 현장 모니터를 멀리서 볼 때 숫자를 읽기 쉽도록 값 글씨를 키운다 */}
+          {setLargeView && (
+            <button
+              onClick={() => setLargeView((v) => !v)}
+              aria-pressed={largeView}
+              className="text-xs font-semibold px-3 py-1.5 rounded-md flex items-center gap-1.5"
+              style={{
+                background: largeView ? COLORS.cyan : COLORS.panel,
+                color: largeView ? "#ffffff" : COLORS.textPrimary,
+                border: `1px solid ${largeView ? COLORS.cyan : COLORS.panelBorderLit}`,
+              }}
+            >
+              {largeView ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+              {largeView ? t("large_view_off") : t("large_view_on")}
+            </button>
+          )}
+        </div>
+        {/* 크게 보기일 때는 한 줄에 들어가는 카드 수를 줄여 숫자가 넉넉히 들어갈 공간을 만든다 */}
+        <div className={largeView ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4" : "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3"}>
+          <SensorCard icon={Thermometer} label={t(SENSOR_KEY_MAP.inTemp)} value={fmt(values.inTemp)} unit="℃" sub={sensorSub("inTemp")} level={paramLevel.inTemp} fault={faultMap.inTemp} statusLabel={t(STATUS_KEYS[paramLevel.inTemp])} faultNote={t("fault_card_note")} large={largeView} />
+          <SensorCard icon={Thermometer} label={t(SENSOR_KEY_MAP.outTemp)} value={fmt(values.outTemp)} unit="℃" sub={sensorSub("outTemp")} level={paramLevel.outTemp} fault={faultMap.outTemp} statusLabel={t(STATUS_KEYS[paramLevel.outTemp])} faultNote={t("fault_card_note")} large={largeView} />
+          <SensorCard icon={Droplets} label={t(SENSOR_KEY_MAP.inFlow)} value={fmt(values.inFlow, 2)} unit="L/min" sub={`${sensorSub("inFlow")} (G1/2 Brass)`} level={paramLevel.inFlow} fault={faultMap.inFlow} statusLabel={t(STATUS_KEYS[paramLevel.inFlow])} faultNote={t("fault_card_note")} large={largeView} />
+          <SensorCard icon={Droplets} label={t(SENSOR_KEY_MAP.outFlow)} value={fmt(values.outFlow, 2)} unit="L/min" sub={`${sensorSub("outFlow")} (YF-S201)`} level={paramLevel.outFlow} fault={faultMap.outFlow} statusLabel={t(STATUS_KEYS[paramLevel.outFlow])} faultNote={t("fault_card_note")} large={largeView} />
+          <SensorCard icon={Gauge} label={t(SENSOR_KEY_MAP.pressure)} value={fmt(values.pressure, 0)} unit="kPa" sub={sensorSub("pressure")} level={paramLevel.pressure} fault={faultMap.pressure} statusLabel={t(STATUS_KEYS[paramLevel.pressure])} faultNote={t("fault_card_note")} large={largeView} />
         </div>
       </section>
 
@@ -114,7 +133,7 @@ export default function MonitorTab({ values, paramLevel, faultMap, thresholds, h
               <CartesianGrid strokeDasharray="3 3" stroke={COLORS.panelBorder} />
               <XAxis dataKey="t" tickFormatter={xTickFormatter} interval={xTickInterval} tick={{ fill: COLORS.textDim, fontSize: 10 }} stroke={COLORS.panelBorder} minTickGap={20} />
               <YAxis tick={{ fill: COLORS.textDim, fontSize: 10 }} stroke={COLORS.panelBorder} domain={[0, 100]} />
-              <Tooltip labelFormatter={xTickFormatter} contentStyle={{ background: "#ffffff", border: `1px solid ${COLORS.panelBorderLit}`, fontSize: 12, boxShadow: "0 4px 16px rgba(15,23,42,0.12)" }} labelStyle={{ color: COLORS.textDim }} />
+              <Tooltip labelFormatter={xTickFormatter} contentStyle={{ background: COLORS.panel, border: `1px solid ${COLORS.panelBorderLit}`, fontSize: 12, boxShadow: "0 4px 16px rgba(15,23,42,0.12)" }} labelStyle={{ color: COLORS.textDim }} />
               <Legend wrapperStyle={{ fontSize: 11, color: COLORS.textDim }} />
               {renderAlarmReferenceLines("t")}
               <Line type="monotone" dataKey="inTemp" name={t(SENSOR_KEY_MAP.inTemp)} stroke={COLORS.cyan} dot={false} strokeWidth={2} isAnimationActive={false} />
@@ -130,7 +149,7 @@ export default function MonitorTab({ values, paramLevel, faultMap, thresholds, h
               <CartesianGrid strokeDasharray="3 3" stroke={COLORS.panelBorder} />
               <XAxis dataKey="t" tickFormatter={xTickFormatter} interval={xTickInterval} tick={{ fill: COLORS.textDim, fontSize: 10 }} stroke={COLORS.panelBorder} minTickGap={20} />
               <YAxis tick={{ fill: COLORS.textDim, fontSize: 10 }} stroke={COLORS.panelBorder} domain={[0, 14]} />
-              <Tooltip labelFormatter={xTickFormatter} contentStyle={{ background: "#ffffff", border: `1px solid ${COLORS.panelBorderLit}`, fontSize: 12, boxShadow: "0 4px 16px rgba(15,23,42,0.12)" }} labelStyle={{ color: COLORS.textDim }} />
+              <Tooltip labelFormatter={xTickFormatter} contentStyle={{ background: COLORS.panel, border: `1px solid ${COLORS.panelBorderLit}`, fontSize: 12, boxShadow: "0 4px 16px rgba(15,23,42,0.12)" }} labelStyle={{ color: COLORS.textDim }} />
               <Legend wrapperStyle={{ fontSize: 11, color: COLORS.textDim }} />
               {renderAlarmReferenceLines("f")}
               <Line type="monotone" dataKey="inFlow" name={t(SENSOR_KEY_MAP.inFlow)} stroke={COLORS.normal} dot={false} strokeWidth={2} isAnimationActive={false} />
@@ -157,7 +176,7 @@ export default function MonitorTab({ values, paramLevel, faultMap, thresholds, h
                   disabled={isTransitioning || hwMode}
                   className="text-left px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors"
                   style={{
-                    background: activeScenario === key ? "#eff6ff" : "#f8fafc",
+                    background: activeScenario === key ? COLORS.accentSoft : COLORS.panelSoft,
                     border: `1px solid ${activeScenario === key ? COLORS.panelBorderLit : COLORS.panelBorder}`,
                     color: COLORS.textPrimary,
                     opacity: isTransitioning && activeScenario !== key ? 0.5 : 1,
@@ -191,7 +210,7 @@ export default function MonitorTab({ values, paramLevel, faultMap, thresholds, h
               )}
               {recentIncidents.map((entry) => (
                 <div key={entry.id} className="text-xs font-mono px-2.5 py-2 rounded" style={{ background: "rgba(220,38,38,0.06)", border: `1px solid ${COLORS.danger}33` }}>
-                  <span style={{ color: COLORS.textDim }}>[{entry.time}]</span> <span style={{ color: "#991b1b" }}>{t(`msg_${entry.code}`)}</span>
+                  <span style={{ color: COLORS.textDim }}>[{entry.time}]</span> <span style={{ color: COLORS.dangerText }}>{t(`msg_${entry.code}`)}</span>
                   {entry.resolved && (
                     <div className="mt-1" style={{ color: COLORS.normal }}>
                       ✅ {entry.resolvedTime} {t("resolved_confirmed_at")}

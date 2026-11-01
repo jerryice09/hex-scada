@@ -219,7 +219,7 @@ export default function HeatExchanger3D({ levels, t }) {
 
   return (
     <div className="relative w-full" style={{ height: 420 }}>
-      <div ref={mountRef} className="w-full h-full rounded-lg" style={{ background: "#f1f5f9" }} />
+      <div ref={mountRef} className="w-full h-full rounded-lg" style={{ background: COLORS.panelMuted }} />
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center text-sm font-mono" style={{ color: COLORS.textDim }}>
           {t("loading_3d")}
