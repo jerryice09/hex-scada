@@ -74,7 +74,7 @@ HEX-SCADA는 이 문제를 실제 센서 하드웨어(ESP32)와 무료 클라우
             ├─ 판단 로직 (calculations.js) — 임계값 비교로 정상/주의/경고/위험 4단계 산출
             ├─ SOP 자동 팝업 + 사고 이력 기록 (우선순위 정렬, 인지완료 처리)
             ├─ AI 고장 예측 타이머 — 최근 10개 포인트 선형회귀
-            ├─ 3D 설비 구조도 — OpenSCAD 실측 모델 + Three.js 인터랙티브 뷰어
+            ├─ 3D 설비 구조도 — 실습 설비 3D 모델(Blender) + Three.js 인터랙티브 뷰어
             ├─ 📖 운영 매뉴얼 탭 (한국어/영어/베트남어)
             └─ 다국어 UI (KO/EN/VI 실시간 전환)
 ```
@@ -87,7 +87,7 @@ HEX-SCADA는 이 문제를 실제 센서 하드웨어(ESP32)와 무료 클라우
 **Frontend**: React 18, Vite, Tailwind CSS, Recharts, Three.js
 **Backend**: Vercel 서버리스 함수(Node.js), Upstash Redis(REST API)
 **Hardware**: ESP32, DHT-22(AM2302), 유량센서(G1/2 Brass·YF-S201), 능동 부저, DS3120MG 서보모터
-**설계 도구**: OpenSCAD (열교환기 실측 3D 모델링)
+**설계 도구**: Blender (실습 설비 전체 3D 모델링), OpenSCAD (초기 열교환기 실측 모델)
 **배포/호스팅**: Vercel (Hobby 무료 플랜), GitHub
 
 전체 오픈소스 패키지 목록과 라이선스는 [부록 A](#부록-a--사용한-외부-api--프레임워크--오픈소스)를 참고하세요.
@@ -143,7 +143,7 @@ npm run build     # dist/ 에 정적 빌드 산출물 생성
 |---|---|---|
 | [Recharts](https://recharts.org/) 2.12.7 | 온도·유량 추이 라인 차트 | MIT |
 | [lucide-react](https://lucide.dev/) 0.383.0 | UI 아이콘 세트 | ISC |
-| [three.js](https://threejs.org/) 0.160 | 설비 구조도 탭의 인터랙티브 3D 열교환기 뷰어 (STL 로드 + OrbitControls) | MIT |
+| [three.js](https://threejs.org/) 0.160 | 설비 구조도 탭의 인터랙티브 3D 설비 뷰어 (GLTFLoader + meshopt + OrbitControls) | MIT |
 
 ### 외부 API · 클라우드 서비스
 | 이름 | 용도 | 비고 |
@@ -197,7 +197,8 @@ hardware/
   hex_scada_esp32_node.ino  # ESP32 센서 노드 펌웨어
   3d/heat_exchanger.scad      # 열교환기 실측 3D 모델 원본 (OpenSCAD)
 public/
-  models/heat_exchanger.stl # 웹 3D 뷰어용으로 변환한 STL
+  models/heat_exchanger_rig.glb # 웹 3D 뷰어용 설비 모델 (Blender → GLB, meshopt 압축)
+  models/heat_exchanger.stl # (이전 버전) OpenSCAD 열교환기 단독 모델
 ```
 
 ## 부록 C — 웹페이지로 배포하기
@@ -283,20 +284,21 @@ SOP(표준대응절차)를 언어 장벽 없이 이해할 수 있도록 하기 �
 
 ## 부록 G — 3D 설비 모델 (설비 구조도 탭)
 
-`설비 구조도` 탭은 추상적인 SVG 배관도 대신, 학생이 OpenSCAD로 실측 규격에 맞춰 직접
-모델링한 열교환기 3D 모델을 그대로 불러와서 보여줍니다. 신입 사원도 실물과 동일한 형태로
-입구·출구·벤트·드레인 위치를 익힐 수 있게 하기 위함입니다.
+`설비 구조도` 탭은 추상적인 SVG 배관도 대신, 학교 실습실의 열교환기 설비를 실물 사진에 맞춰
+3D로 모델링한 파일을 그대로 불러와서 보여줍니다. 신입 사원도 실물과 같은 모습으로
+입구·출구·벤트·드레인 위치와 주변 배관 연결을 익힐 수 있게 하기 위함입니다.
 
-- 원본 설계 파일: `hardware/3d/heat_exchanger.scad` (OpenSCAD)
-- 규격: 전장 555mm, 쉘 외경 114mm, 내부에 육각 피치로 배열된 튜브 다발(약 60개) 포함
-- 포트: IN(입구)·OUT(출구)·VENT(벤트)·DRAIN(드레인) 4곳에 실제 각인 라벨 태그 모델링
-- 웹에는 `public/models/heat_exchanger.stl`로 변환해서 로드하며, three.js `STLLoader` +
-  `OrbitControls`로 마우스 드래그 회전·휠 줌이 가능한 인터랙티브 3D 뷰로 렌더링합니다.
-- 각 포트 위치에는 실시간 센서 상태(정상/주의/경고/위험)에 따라 색이 바뀌는 핀을 표시하며,
-  위험 상태에서는 점멸 효과가 들어갑니다.
-
-`.scad` 파일을 수정한 뒤 새 STL을 만들려면 OpenSCAD에서 F6(렌더링) 후
-File → Export → Export as STL로 내보내고, `public/models/heat_exchanger.stl`을 덮어쓰면 됩니다.
+- **보기 전환**: 뷰어 왼쪽 위 버튼으로 **설비 전체 보기**(랙·수조·냄비·히터·펌프·유량계·배관 포함)와
+  **열교환기만 보기**(쉘·플랜지·노즐·새들·드레인·끝단 밸브와 압력계)를 바꿀 수 있고,
+  바꿀 때마다 카메라가 해당 영역이 화면에 꽉 차도록 자동으로 이동합니다.
+- **원본 파일**: `hardware/3d/heat_exchanger_photo_match.blend` (Blender)
+- **웹용 변환**: `hardware/3d/export_glb.py`로 GLB를 만든 뒤 meshopt로 압축해
+  `public/models/heat_exchanger_rig.glb`(약 0.9MB)로 넣었습니다. 변환 방법은 스크립트 상단 주석 참고.
+- **상태 핀**: IN(왼쪽 상단 노즐)·OUT(오른쪽 상단 노즐)·VENT(왼쪽 끝단 벤트 밸브, 옆 압력계)·
+  DRAIN(쉘 하단 드레인 플러그) 4곳에 실시간 센서 상태(정상/주의/경고/위험)에 따라 색이 바뀌는 핀을
+  표시하며, 위험 상태에서는 점멸합니다. 좌표는 `src/components/HeatExchanger3D.jsx`의 `PIN_POSITIONS`에서 바꿉니다.
+- 이전 버전의 OpenSCAD 실측 모델(`hardware/3d/heat_exchanger.scad`, 전장 555mm·쉘 외경 114mm·
+  튜브 다발 약 60개)과 STL(`public/models/heat_exchanger.stl`)은 참고용으로 남겨두었습니다.
 
 ## 부록 H — 하드웨어 구성 (BOM, Bill of Materials)
 
