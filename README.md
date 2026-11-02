@@ -74,7 +74,7 @@ HEX-SCADA는 이 문제를 실제 센서 하드웨어(ESP32)와 무료 클라우
             ├─ 판단 로직 (calculations.js) — 임계값 비교로 정상/주의/경고/위험 4단계 산출
             ├─ SOP 자동 팝업 + 사고 이력 기록 (우선순위 정렬, 인지완료 처리)
             ├─ AI 고장 예측 타이머 — 최근 10개 포인트 선형회귀
-            ├─ 3D 설비 구조도 — 실습 설비 3D 모델(Blender) + Three.js 인터랙티브 뷰어
+            ├─ 3D 설비 구조도 — 실습 설비 3D 모델(Blender) + Three.js 뷰어 + 공정 흐름 애니메이션
             ├─ 📖 운영 매뉴얼 탭 (한국어/영어/베트남어)
             └─ 다국어 UI (KO/EN/VI 실시간 전환)
 ```
@@ -294,9 +294,13 @@ SOP(표준대응절차)를 언어 장벽 없이 이해할 수 있도록 하기 �
 - **원본 파일**: `hardware/3d/heat_exchanger_photo_match.blend` (Blender)
 - **웹용 변환**: `hardware/3d/export_glb.py`로 GLB를 만든 뒤 meshopt로 압축해
   `public/models/heat_exchanger_rig.glb`(약 0.9MB)로 넣었습니다. 변환 방법은 스크립트 상단 주석 참고.
-- **상태 핀**: IN(왼쪽 상단 노즐)·OUT(오른쪽 상단 노즐)·VENT(왼쪽 끝단 벤트 밸브, 옆 압력계)·
-  DRAIN(쉘 하단 드레인 플러그) 4곳에 실시간 센서 상태(정상/주의/경고/위험)에 따라 색이 바뀌는 핀을
-  표시하며, 위험 상태에서는 점멸합니다. 좌표는 `src/components/HeatExchanger3D.jsx`의 `PIN_POSITIONS`에서 바꿉니다.
+- **상태 핀 5곳** (팀 공정 흐름 영상 기준): HOT IN(온수 입구, 쉘 오른쪽 위 노즐)·COLD IN(냉각수 입구, 쉘 왼쪽 위 노즐)·
+  OUT(출구, 왼쪽 끝단 → 수조)·VENT(쉘 상단 가운데)·DRAIN(쉘 하단 드레인 플러그)에 실시간 센서 상태
+  (정상/주의/경고/위험)에 따라 색이 바뀌는 핀을 표시하며, 위험 상태에서는 점멸합니다.
+  좌표는 `src/components/HeatExchanger3D.jsx`의 `PIN_POSITIONS`에서 바꿉니다.
+- **공정 흐름 보기**: 버튼을 누르면 ① 온수(빨강) → ② 냉각수(파랑) → ③ 열교환 후 수조(보라) → ④ 티(Tee) 분배·순환(초록)
+  4단계가 순서대로 색 선으로 그려지고, 선 위를 지나가는 빛으로 물이 흐르는 방향을 보여줍니다.
+  아래 단계 카드를 누르면 그 흐름만 강조됩니다. 경로는 3D 모델의 실제 배관 좌표에서 뽑았습니다(`FLOWS`).
 - 이전 버전의 OpenSCAD 실측 모델(`hardware/3d/heat_exchanger.scad`, 전장 555mm·쉘 외경 114mm·
   튜브 다발 약 60개)과 STL(`public/models/heat_exchanger.stl`)은 참고용으로 남겨두었습니다.
 

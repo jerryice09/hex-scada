@@ -11,7 +11,7 @@ export const MANUAL_SECTIONS = {
       body: [
         "본 장비(OR-100)는 쉘-튜브(Shell & Tube)형 열교환기입니다. 고온 유체가 튜브 다발 내부를 흐르고, 그 열이 쉘(외피) 안의 냉각 유체로 전달되는 구조입니다.",
         "전장 555mm, 쉘 외경 114mm이며, 내부에 약 60개의 튜브가 육각(삼각) 피치로 배열되어 있습니다.",
-        "포트는 총 4곳입니다: 입구(IN, 좌측 상단) · 출구(OUT, 우측 상단) · 벤트(VENT, 입구측 상단 보조 노즐) · 드레인(DRAIN, 출구측 하단 보조 노즐).",
+        "포트는 총 5곳입니다: 온수 입구(HOT IN, 쉘 오른쪽 위) · 냉각수 입구(COLD IN, 쉘 왼쪽 위) · 출구(OUT, 왼쪽 끝단 → 수조) · 벤트(VENT, 쉘 상단 가운데) · 드레인(DRAIN, 쉘 하단 가운데).",
         "각 포트의 정확한 위치는 대시보드의 '설비 구조도' 탭에서 3D 모델로 직접 돌려보며 확인할 수 있습니다.",
       ],
     },
@@ -103,7 +103,7 @@ export const MANUAL_SECTIONS = {
       body: [
         "This unit (OR-100) is a shell-and-tube heat exchanger. Hot fluid flows inside the tube bundle, and that heat is transferred to the cooling fluid inside the shell (outer casing).",
         "Overall length 555mm, shell outer diameter 114mm, with about 60 tubes arranged inside in a hexagonal (triangular) pitch pattern.",
-        "There are 4 ports in total: Inlet (IN, upper left) · Outlet (OUT, upper right) · Vent (VENT, auxiliary nozzle on the inlet-side top) · Drain (DRAIN, auxiliary nozzle on the outlet-side bottom).",
+        "There are 5 ports in total: Hot-water inlet (HOT IN, upper right of the shell) · Cooling-water inlet (COLD IN, upper left of the shell) · Outlet (OUT, left end → bath) · Vent (VENT, top centre of the shell) · Drain (DRAIN, bottom centre of the shell).",
         "You can check the exact location of each port by rotating the 3D model directly in the '3D Diagram' tab of the dashboard.",
       ],
     },
@@ -195,7 +195,7 @@ export const MANUAL_SECTIONS = {
       body: [
         "Thiết bị này (OR-100) là bộ trao đổi nhiệt kiểu ống chùm (Shell & Tube). Chất lỏng nóng chảy bên trong chùm ống, và nhiệt lượng đó được truyền sang chất lỏng làm mát bên trong vỏ (shell).",
         "Tổng chiều dài 555mm, đường kính ngoài vỏ 114mm, bên trong có khoảng 60 ống được bố trí theo kiểu lục giác (tam giác).",
-        "Có tổng cộng 4 cổng: Đầu vào (IN, trên bên trái) · Đầu ra (OUT, trên bên phải) · Van xả khí (VENT, vòi phụ ở phía trên bên đầu vào) · Van xả đáy (DRAIN, vòi phụ ở phía dưới bên đầu ra).",
+        "Có tổng cộng 5 cổng: Đầu vào nước nóng (HOT IN, trên bên phải thân) · Đầu vào nước làm mát (COLD IN, trên bên trái thân) · Đầu ra (OUT, đầu trái → bể) · Van xả khí (VENT, đỉnh giữa thân) · Van xả đáy (DRAIN, đáy giữa thân).",
         "Bạn có thể kiểm tra chính xác vị trí từng cổng bằng cách xoay mô hình 3D trực tiếp trong tab 'Mô hình 3D' của bảng điều khiển.",
       ],
     },

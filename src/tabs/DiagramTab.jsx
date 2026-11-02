@@ -7,24 +7,28 @@ import HeatExchanger3D from "../components/HeatExchanger3D";
 //     → 드레인과 입구 두 곳 모두 조작 대상이므로, 시나리오 발생 시 둘 다 강조되어야
 //       현장 작업자가 "어디를 만져야 하는지"를 한눈에 파악할 수 있다.
 const SOP_AFFECTED_PINS = {
-  WATER_HAMMER: ["drain", "in"], // 드레인 밸브 개방 + 입구 증기 공급 감소
-  OVER_PRESSURE: ["vent", "in"], // 압력 릴리프 밸브(벤트) 작동 + 공급 차단(입구)
-  HEAT_FAULT: ["in", "out"], // 유량밸브 점검(입구) + 열교환 효율 재측정(출구)
+  WATER_HAMMER: ["drain", "in"], // 드레인 밸브 개방 + 입구(온수) 공급 감소
+  OVER_PRESSURE: ["vent", "in"], // 압력 릴리프 밸브(벤트) 작동 + 공급 차단(온수 입구)
+  HEAT_FAULT: ["in", "inCold", "out"], // 온수·냉각수 입구 유량밸브 점검 + 열교환 효율 재측정(출구)
 };
 
-const PIN_LABEL_KEYS = { in: "pin_in", out: "pin_out", vent: "pin_vent", drain: "pin_drain" };
-const PIN_DESC_KEYS = { in: "desc_in", out: "desc_out", vent: "desc_vent", drain: "desc_drain" };
+// 포트 5곳: 온수 입구(in) · 냉각수 입구(inCold) · 출구(out) · 벤트(vent) · 드레인(drain)
+// 위치는 팀 공정 흐름 영상 기준 — 쉘 위 노즐 두 곳이 모두 입구, 출구는 왼쪽 끝단(→ 수조)
+const PIN_LABEL_KEYS = { in: "pin_in", inCold: "pin_inCold", out: "pin_out", vent: "pin_vent", drain: "pin_drain" };
+const PIN_DESC_KEYS = { in: "desc_in", inCold: "desc_inCold", out: "desc_out", vent: "desc_vent", drain: "desc_drain" };
 const STATUS_KEYS = ["status_normal", "status_caution", "status_warning", "status_danger"];
 
 // 문제점 개선: 기존에는 추상화된 SVG 배관도라서 실제 밸브 위치를 알기 어려웠다.
-// 학생이 OpenSCAD로 실측 규격(전장 555mm, 쉘 외경 114mm 등)에 맞춰 직접 3D 모델링한
-// 열교환기(입구/출구/벤트/드레인 각인 포함)를 그대로 불러와서, 신입 사원도 실물과
-// 동일한 형태로 각 포트 위치를 익힐 수 있게 했다.
+// 실습실 설비를 실물 사진에 맞춰 3D로 모델링한 파일을 그대로 불러와서, 신입 사원도 실물과
+// 동일한 형태로 각 포트 위치와 배관 연결을 익힐 수 있게 했다.
+// "공정 흐름 보기"를 누르면 온수 → 냉각수 → 열교환 후 수조 → 분배·순환 4단계 흐름이 색으로 표시된다.
 export default function DiagramTab({ paramLevel, dangerCodes, t }) {
   // 1단계: 센서값 기준 기본 레벨
   const heatFault = dangerCodes.includes("HEAT_FAULT");
   const levels = {
     in: Math.max(paramLevel.inTemp, paramLevel.inFlow, heatFault ? 3 : 0),
+    // 냉각수 입구에는 아직 전용 센서가 없어 열교환 이상(입출구 온도 동시 급변)일 때만 강조한다.
+    inCold: heatFault ? 3 : 0,
     out: Math.max(paramLevel.outTemp, heatFault ? 3 : 0),
     vent: paramLevel.pressure,
     drain: paramLevel.outFlow,
@@ -39,7 +43,7 @@ export default function DiagramTab({ paramLevel, dangerCodes, t }) {
     });
   });
 
-  const sectionKeys = ["in", "out", "vent", "drain"];
+  const sectionKeys = ["in", "inCold", "out", "vent", "drain"];
 
   return (
     <section className="rounded-lg p-4" style={{ background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}` }}>
@@ -54,7 +58,7 @@ export default function DiagramTab({ paramLevel, dangerCodes, t }) {
 
       <HeatExchanger3D levels={levels} t={t} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-2 mt-4">
         {sectionKeys.map((key) => {
           const level = levels[key];
           const meta = STATUS_META[level];
