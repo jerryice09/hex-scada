@@ -26,7 +26,9 @@
 const char* WIFI_SSID = "your-wifi-ssid";
 const char* WIFI_PASSWORD = "your-wifi-password";
 const char* SERVER_URL = "https://hex-scada.vercel.app/api/ingest";
-const char* API_KEY = "hex-scada-2026-secret-9f83a1";
+// ⚠ API_KEY: Vercel 환경변수 INGEST_API_KEY와 같은 값을 넣는다.
+//   실제 키는 보드에 업로드할 때만 여기에 입력하고, GitHub에는 절대 올리지 말 것 (공개 저장소라 누구나 볼 수 있음).
+const char* API_KEY = "your-ingest-api-key";
 // -------------------------------------------------------
 
 // ⚠ 안전 스위치: 서보로 실제 밸브를 자동 제어할지 여부.

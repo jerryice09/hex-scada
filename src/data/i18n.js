@@ -102,7 +102,7 @@ export const STRINGS = {
     // 위험도 분석
     risk_score_title: "종합 Risk Score",
     risk_score_note: "유량 40% · 압력 30% · 온도 30% 가중 합산 (센서 오류 항목은 제외 후 재정규화)",
-    ai_predict_title: "AI 고장 예측 타이머",
+    ai_predict_title: "추세 기반 고장 예측 타이머",
     already_danger: "이미 위험 상태",
     already_danger_banner: "🚨 이미 위험 상태입니다 — 즉시 조치가 필요합니다",
     eta_seconds: "약 {n}초 후",
@@ -268,7 +268,7 @@ export const STRINGS = {
 
     risk_score_title: "Overall Risk Score",
     risk_score_note: "Flow 40% · Pressure 30% · Temp 30% weighted (faulty sensors excluded & renormalized)",
-    ai_predict_title: "AI Failure Prediction Timer",
+    ai_predict_title: "Trend-Based Failure Prediction Timer",
     already_danger: "Already in danger",
     already_danger_banner: "🚨 Already in a dangerous state — immediate action required",
     eta_seconds: "in about {n}s",
@@ -429,7 +429,7 @@ export const STRINGS = {
 
     risk_score_title: "Điểm rủi ro tổng hợp",
     risk_score_note: "Lưu lượng 40% · Áp suất 30% · Nhiệt độ 30% (loại trừ cảm biến lỗi và tính lại tỷ trọng)",
-    ai_predict_title: "Bộ đếm dự đoán sự cố AI",
+    ai_predict_title: "Bộ đếm dự đoán sự cố theo xu hướng",
     already_danger: "Đã ở trạng thái nguy hiểm",
     already_danger_banner: "🚨 Đã ở trạng thái nguy hiểm — cần xử lý ngay lập tức",
     eta_seconds: "khoảng {n} giây nữa",
