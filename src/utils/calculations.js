@@ -155,7 +155,7 @@ export function getRefBadges(code, values, thresholds) {
   const badges = [];
   const flowAnomaly =
     calcParamLevel("inFlow", values.inFlow, thresholds) >= 1 || calcParamLevel("outFlow", values.outFlow, thresholds) >= 1;
-  if (code === "OVER_PRESSURE" && flowAnomaly) badges.push("⚡ 여천 NCC 2022 유사 패턴");
+  if (code === "OVER_PRESSURE" && flowAnomaly) badges.push("⚡ 여천 NCC 2024 유사 패턴");
   if (code === "WATER_HAMMER") badges.push("⚡ 배관 파열 선행 징후 유형");
   return badges;
 }

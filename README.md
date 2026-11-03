@@ -73,7 +73,7 @@ HEX-SCADA는 이 문제를 실제 센서 하드웨어(ESP32)와 무료 클라우
             │
             ├─ 판단 로직 (calculations.js) — 임계값 비교로 정상/주의/경고/위험 4단계 산출
             ├─ SOP 자동 팝업 + 사고 이력 기록 (우선순위 정렬, 인지완료 처리)
-            ├─ 추세 기반 고장 예측 타이머 — 최근 10개 포인트 선형회귀
+            ├─ AI 고장 예측 타이머 — 최근 10개 포인트 선형회귀
             ├─ 3D 설비 구조도 — 실습 설비 3D 모델(Blender) + Three.js 뷰어 + 공정 흐름 애니메이션
             ├─ 📖 운영 매뉴얼 탭 (한국어/영어/베트남어)
             └─ 다국어 UI (KO/EN/VI 실시간 전환)
@@ -241,7 +241,6 @@ ESP32(센서) --HTTPS POST(1초)--> /api/ingest --저장--> Redis(Upstash)
 1. Vercel 프로젝트 → Settings → Environment Variables
 2. `INGEST_API_KEY` 이름으로 임의의 긴 문자열을 값으로 추가
 3. 이 값을 ESP32 스케치의 `API_KEY`에 그대로 복사
-   (⚠ 실제 키를 넣은 스케치는 GitHub에 올리지 마세요. 저장소에는 `your-ingest-api-key` 자리표시자만 둡니다.)
 
 ### 3. 라이브러리 설치 (Arduino IDE)
 **DHT sensor library**(Adafruit) · **Adafruit Unified Sensor** · **ESP32Servo**(madhephaestus)
