@@ -91,8 +91,20 @@ export default function HeatExchangerSCADA() {
   }, [largeView]);
   const t = useCallback((key, params) => translate(locale, key, params), [locale]);
 
-  // 실시간 하드웨어(ESP32) 연동 모드 — true면 시뮬레이션 지터 대신 /api/sensors를 폴링한다.
-  const [hwMode, setHwMode] = useState(false);
+  // 실시간 하드웨어(ESP32) 연동 모드 — true면 시뮬레이션 지터 대신 /api/sensors 값을 표시한다.
+  // 버튼을 누르지 않아도, ESP32가 데이터를 보내고 있으면 자동으로 켜진다.
+  // 그래서 QR 코드로 들어온 휴대폰 등 모든 접속자가 같은 실측값을 보게 된다.
+  const [hwMode, setHwModeState] = useState(false);
+  const hwModeRef = useRef(hwMode);
+  hwModeRef.current = hwMode;
+  // 사용자가 설정 탭에서 직접 시뮬레이션으로 돌려놓았으면 자동 전환을 하지 않는다 (시나리오 시연용).
+  const hwManualOffRef = useRef(false);
+  const setHwMode = useCallback((updater) => {
+    const next = typeof updater === "function" ? updater(hwModeRef.current) : updater;
+    hwManualOffRef.current = !next;
+    hwModeRef.current = next;
+    setHwModeState(next);
+  }, []);
   const [hwOnline, setHwOnline] = useState(false);
   const [hwLastSeen, setHwLastSeen] = useState(null);
 
@@ -179,21 +191,28 @@ export default function HeatExchangerSCADA() {
   }, [baseline, isTransitioning, hwMode]);
 
   // ------------------------------------------------------------
-  // 실시간 하드웨어 폴링: hwMode가 켜져 있을 때 1초마다 /api/sensors를 조회해
-  // ESP32가 전송한 최신 값으로 values를 직접 갱신한다.
+  // 실시간 하드웨어 폴링: 1초마다 /api/sensors를 조회한다.
+  // - ESP32가 값을 보내고 있으면(online) 버튼을 누르지 않아도 자동으로 하드웨어 모드로 전환하고,
+  //   ESP32가 전송한 최신 값으로 values를 직접 갱신한다. → 접속한 모든 기기가 같은 실측값을 본다.
+  // - 사용자가 설정 탭에서 시뮬레이션으로 직접 돌려놓은 경우에는 조회하지 않는다.
   // 응답이 5초 이상 갱신되지 않았거나 요청이 실패하면 hwOnline을 false로 표시만 하고,
   // (판단 로직이 이상한 값으로 흔들리지 않도록) 화면에는 마지막으로 받은 값을 그대로 유지한다.
   // ------------------------------------------------------------
   useEffect(() => {
-    if (!hwMode) return;
     let cancelled = false;
 
     const poll = async () => {
+      if (!hwModeRef.current && hwManualOffRef.current) return;
       try {
         const res = await fetch("/api/sensors");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (cancelled) return;
         if (data.online && data.values) {
+          if (!hwModeRef.current) {
+            hwModeRef.current = true;
+            setHwModeState(true);
+          }
           setValues({
             inTemp: data.values.inTemp,
             outTemp: data.values.outTemp,
@@ -217,6 +236,15 @@ export default function HeatExchangerSCADA() {
       cancelled = true;
       clearInterval(id);
     };
+  }, []);
+
+  // 하드웨어 모드로 바뀌는 순간 진행 중이던 시뮬레이션 시나리오 전환을 멈춘다.
+  // (멈추지 않으면 전환 타이머가 실측값을 시뮬레이션 값으로 계속 덮어쓴다.)
+  useEffect(() => {
+    if (!hwMode || !transitionRef.current) return;
+    clearInterval(transitionRef.current);
+    transitionRef.current = null;
+    setIsTransitioning(false);
   }, [hwMode]);
 
   // ------------------------------------------------------------
