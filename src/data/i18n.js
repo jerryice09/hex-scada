@@ -174,7 +174,7 @@ export const STRINGS = {
     settings_hw_on_desc_offline: "/api/sensors를 1초마다 조회합니다. 아직 ESP32로부터 데이터를 받지 못했거나 연결이 끊겼습니다 (5초 이상 미수신).",
     settings_hw_off_desc: "꺼져 있으면 화면에 표시되는 값은 전부 시뮬레이션(지터/시나리오)입니다. ESP32 배선·배포가 끝났다면 켜서 실제 값으로 전환하세요.",
     settings_threshold_title: "임계값 설정",
-    settings_threshold_notice: "현재 시스템은 여수석유화학고 실습 환경 기준값으로 운전 중입니다. 아래에서 현장별 임계값을 수정하면 즉시 반영됩니다.",
+    settings_threshold_notice: "현재 시스템은 여수석유화학고 실습 환경 기준값으로 운전 중입니다. 아래에서 현장별 임계값을 저장하면 이 사이트에 접속한 모든 사람에게 함께 적용됩니다.",
     label_min: "하한",
     label_max: "상한",
     default_value_prefix: "기본값",
@@ -184,6 +184,10 @@ export const STRINGS = {
 
     // 토스트
     toast_applied: "✅ {time} 임계값이 적용되었습니다",
+    toast_applied_shared: "✅ {time} 임계값이 저장되어 모든 접속자에게 적용되었습니다",
+    toast_share_failed: "⚠ 서버에 저장하지 못했습니다 — 적용되지 않았습니다. 잠시 후 다시 시도해주세요",
+    toast_pin_wrong: "⚠ 설정 비밀번호가 맞지 않습니다 — 적용되지 않았습니다",
+    settings_pin_prompt: "설정 비밀번호를 입력하세요",
     toast_invalid: "⚠ 입력값을 확인해주세요 — 적용되지 않았습니다",
 
     // 매뉴얼
@@ -341,7 +345,7 @@ export const STRINGS = {
     settings_hw_on_desc_offline: "Polling /api/sensors every second. No data received from the ESP32 yet, or the connection was lost (no data for 5+ seconds).",
     settings_hw_off_desc: "While off, all displayed values are simulated (jitter/scenarios). Once ESP32 wiring & deployment is done, switch this on for real values.",
     settings_threshold_title: "Threshold Settings",
-    settings_threshold_notice: "The system is currently running on Yeosu Petrochemical High School's lab baseline values. Changing thresholds below takes effect immediately.",
+    settings_threshold_notice: "The system is currently running on Yeosu Petrochemical High School's lab baseline values. Saving thresholds below applies them for everyone using this site.",
     label_min: "Min",
     label_max: "Max",
     default_value_prefix: "Default",
@@ -350,6 +354,10 @@ export const STRINGS = {
     settings_footer_note: "This settings feature demonstrates that the system can be instantly reconfigured to match real industrial site conditions.",
 
     toast_applied: "✅ {time} Thresholds applied",
+    toast_applied_shared: "✅ {time} Thresholds saved and applied for everyone",
+    toast_share_failed: "⚠ Could not save to the server — not applied. Please try again shortly",
+    toast_pin_wrong: "⚠ Wrong settings password — not applied",
+    settings_pin_prompt: "Enter the settings password",
     toast_invalid: "⚠ Please check your input — not applied",
 
     manual_title: "Heat Exchanger (OR-100) Operations Manual",
@@ -506,7 +514,7 @@ export const STRINGS = {
     settings_hw_on_desc_offline: "Đang truy vấn /api/sensors mỗi giây. Chưa nhận được dữ liệu từ ESP32 hoặc mất kết nối (không có dữ liệu trong 5+ giây).",
     settings_hw_off_desc: "Khi tắt, mọi giá trị hiển thị đều là mô phỏng (nhiễu/kịch bản). Sau khi đấu nối và triển khai ESP32 xong, hãy bật để dùng giá trị thực.",
     settings_threshold_title: "Cài đặt ngưỡng",
-    settings_threshold_notice: "Hệ thống hiện đang chạy theo giá trị chuẩn của phòng thực hành Trường THPT Hóa dầu Yeosu. Thay đổi ngưỡng bên dưới sẽ có hiệu lực ngay lập tức.",
+    settings_threshold_notice: "Hệ thống hiện đang chạy theo giá trị chuẩn của phòng thực hành Trường THPT Hóa dầu Yeosu. Lưu ngưỡng bên dưới sẽ áp dụng cho tất cả mọi người đang dùng trang này.",
     label_min: "Tối thiểu",
     label_max: "Tối đa",
     default_value_prefix: "Mặc định",
@@ -515,6 +523,10 @@ export const STRINGS = {
     settings_footer_note: "Tính năng cài đặt này minh họa việc hệ thống có thể được cấu hình lại ngay lập tức để phù hợp với điều kiện thực tế tại hiện trường.",
 
     toast_applied: "✅ {time} Đã áp dụng ngưỡng",
+    toast_applied_shared: "✅ {time} Đã lưu ngưỡng và áp dụng cho mọi người",
+    toast_share_failed: "⚠ Không thể lưu lên máy chủ — chưa được áp dụng. Vui lòng thử lại sau",
+    toast_pin_wrong: "⚠ Sai mật khẩu cài đặt — chưa được áp dụng",
+    settings_pin_prompt: "Nhập mật khẩu cài đặt",
     toast_invalid: "⚠ Vui lòng kiểm tra lại giá trị nhập — chưa được áp dụng",
 
     manual_title: "Sổ tay vận hành bộ trao đổi nhiệt (OR-100)",

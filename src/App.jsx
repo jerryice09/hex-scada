@@ -64,6 +64,25 @@ function writePref(key, value) {
   }
 }
 
+// 다른 사람이 바꾼 임계값을 서버에서 받아오는 간격 (밀리초)
+const THRESHOLD_SYNC_MS = 5000;
+
+// 설정 비밀번호(SETTINGS_PIN)는 탭을 닫을 때까지만 기억한다.
+function readSessionPin() {
+  try {
+    return window.sessionStorage.getItem("hex-scada-settings-pin") || "";
+  } catch {
+    return "";
+  }
+}
+function writeSessionPin(pin) {
+  try {
+    window.sessionStorage.setItem("hex-scada-settings-pin", pin);
+  } catch {
+    /* 저장 실패는 무시 */
+  }
+}
+
 // 경고 팝업이 떠 있는 동안 경보음을 반복하는 간격 (밀리초). 더 자주/드물게 울리게 하려면 이 값만 바꾸면 된다.
 const SOP_ALARM_INTERVAL_MS = 2000;
 
@@ -408,27 +427,114 @@ export default function HeatExchangerSCADA() {
 
   // ③ 임계값 저장: 저장 전 validateThresholds로 검증한다.
   // 검증 실패 시(하한≥상한, 빈 값 등) 적용하지 않고 에러 메시지만 표시한다.
+  const showToast = useCallback((type, message) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ type, message });
+    toastTimerRef.current = setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  // ------------------------------------------------------------
+  // 임계값 공유: 한 사람이 설정 탭에서 저장한 임계값을 서버(/api/thresholds → Redis)에 올리고,
+  // 모든 접속자가 THRESHOLD_SYNC_MS마다 서버 값을 받아와 같은 기준으로 판단하게 한다.
+  // 서버가 없는 환경(npm run dev 로컬 실행 등)에서는 예전처럼 이 화면에만 적용된다.
+  // ------------------------------------------------------------
+  const sharedThresholdsRef = useRef(false); // 서버 저장소를 쓸 수 있는지
+  const thresholdsRef = useRef(thresholds);
+  thresholdsRef.current = thresholds;
+  const draftThresholdsRef = useRef(draftThresholds);
+  draftThresholdsRef.current = draftThresholds;
+
+  const applyServerThresholds = useCallback((next) => {
+    const current = thresholdsRef.current;
+    if (JSON.stringify(next) === JSON.stringify(current)) return;
+    // 설정 탭에서 값을 고치는 중(입력값 ≠ 적용값)이면 입력 중인 값은 건드리지 않는다.
+    if (JSON.stringify(draftThresholdsRef.current) === JSON.stringify(current)) {
+      setDraftThresholds({ ...next });
+    }
+    setThresholds({ ...next });
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const sync = async () => {
+      try {
+        const res = await fetch("/api/thresholds");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (cancelled) return;
+        sharedThresholdsRef.current = true;
+        if (data.thresholds) applyServerThresholds(data.thresholds);
+      } catch {
+        // 서버 연결 실패: 마지막으로 받은 값을 그대로 유지한다.
+      }
+    };
+    sync();
+    const id = setInterval(sync, THRESHOLD_SYNC_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [applyServerThresholds]);
+
+  // 서버에 저장. 성공하면 true. SETTINGS_PIN이 걸려 있으면 비밀번호를 물어본다.
+  const saveSharedThresholds = useCallback(
+    async (next) => {
+      const post = (pin) =>
+        fetch("/api/thresholds", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...(pin ? { "x-settings-pin": pin } : {}) },
+          body: JSON.stringify({ thresholds: next }),
+        });
+      try {
+        let pin = readSessionPin();
+        let res = await post(pin);
+        if (res.status === 401) {
+          pin = window.prompt(t("settings_pin_prompt")) || "";
+          if (!pin) return false;
+          res = await post(pin);
+          if (res.status === 401) {
+            showToast("error", t("toast_pin_wrong"));
+            return false;
+          }
+          writeSessionPin(pin);
+        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return true;
+      } catch {
+        showToast("error", t("toast_share_failed"));
+        return false;
+      }
+    },
+    [t, showToast]
+  );
+
+  const applyThresholds = useCallback(
+    async (next) => {
+      if (sharedThresholdsRef.current) {
+        const ok = await saveSharedThresholds(next);
+        if (!ok) return;
+      }
+      setValidationErrors([]);
+      setThresholds({ ...next });
+      setDraftThresholds({ ...next });
+      showToast("success", t(sharedThresholdsRef.current ? "toast_applied_shared" : "toast_applied", { time: nowStr() }));
+    },
+    [saveSharedThresholds, showToast, t]
+  );
+
   const saveThresholds = useCallback(() => {
     const { valid, errors } = validateThresholds(draftThresholds);
     if (!valid) {
       setValidationErrors(errors);
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-      setToast({ type: "error", message: t("toast_invalid") });
-      toastTimerRef.current = setTimeout(() => setToast(null), 3000);
+      showToast("error", t("toast_invalid"));
       return;
     }
-    setValidationErrors([]);
-    setThresholds({ ...draftThresholds });
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToast({ type: "success", message: t("toast_applied", { time: nowStr() }) });
-    toastTimerRef.current = setTimeout(() => setToast(null), 3000);
-  }, [draftThresholds, t]);
+    applyThresholds(draftThresholds);
+  }, [draftThresholds, applyThresholds, showToast, t]);
 
   const resetThresholds = useCallback(() => {
-    setValidationErrors([]);
-    setDraftThresholds({ ...DEFAULT_THRESHOLDS });
-    setThresholds({ ...DEFAULT_THRESHOLDS });
-  }, []);
+    applyThresholds({ ...DEFAULT_THRESHOLDS });
+  }, [applyThresholds]);
 
   // ------------------------------------------------------------
   // AI 고장 예측: 최근 10개 포인트의 선형회귀 기울기로 위험 임계값 도달 시간을 예측한다.
