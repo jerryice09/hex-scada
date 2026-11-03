@@ -439,6 +439,9 @@ export default function HeatExchangerSCADA() {
   // 서버가 없는 환경(npm run dev 로컬 실행 등)에서는 예전처럼 이 화면에만 적용된다.
   // ------------------------------------------------------------
   const sharedThresholdsRef = useRef(false); // 서버 저장소를 쓸 수 있는지
+  // 마지막으로 반영한 서버 저장 시각. 서버 응답은 CDN에 2초 캐시되므로, 방금 저장한 값보다
+  // 오래된 응답이 와도 예전 값으로 되돌아가지 않도록 이 시각보다 오래된 값은 무시한다.
+  const thresholdsUpdatedAtRef = useRef(0);
   const thresholdsRef = useRef(thresholds);
   thresholdsRef.current = thresholds;
   const draftThresholdsRef = useRef(draftThresholds);
@@ -463,7 +466,10 @@ export default function HeatExchangerSCADA() {
         const data = await res.json();
         if (cancelled) return;
         sharedThresholdsRef.current = true;
-        if (data.thresholds) applyServerThresholds(data.thresholds);
+        if (data.thresholds && (data.updatedAt || 0) >= thresholdsUpdatedAtRef.current) {
+          thresholdsUpdatedAtRef.current = data.updatedAt || 0;
+          applyServerThresholds(data.thresholds);
+        }
       } catch {
         // 서버 연결 실패: 마지막으로 받은 값을 그대로 유지한다.
       }
@@ -499,6 +505,8 @@ export default function HeatExchangerSCADA() {
           writeSessionPin(pin);
         }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const saved = await res.json().catch(() => ({}));
+        if (saved.updatedAt) thresholdsUpdatedAtRef.current = saved.updatedAt;
         return true;
       } catch {
         showToast("error", t("toast_share_failed"));

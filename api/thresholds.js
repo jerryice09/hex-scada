@@ -3,11 +3,14 @@
 //   GET  /api/thresholds  → 저장된 임계값 ({ thresholds: {...} | null, updatedAt })
 //   POST /api/thresholds  → 임계값 저장 (바디: { thresholds: {...} })
 //
-// 보호(선택): Vercel 환경변수 SETTINGS_PIN을 설정하면, 저장할 때 x-settings-pin 헤더가
-// 같은 값이어야 한다. 설정하지 않으면 누구나 저장할 수 있다.
+// 보호: 저장할 때 x-settings-pin 헤더가 설정 비밀번호와 같아야 한다.
+// 비밀번호는 Vercel 환경변수 SETTINGS_PIN으로 바꿀 수 있고, 없으면 기본값 DEFAULT_PIN을 쓴다.
+// (기본값은 공개 저장소에 보이므로, 바꾸려면 Vercel 환경변수로 설정하는 것을 권장)
 import { redisGet, redisSet } from "./_redis.js";
 
 const KEY = "hex-scada:thresholds";
+const DEFAULT_PIN = "1234";
+const settingsPin = () => process.env.SETTINGS_PIN || DEFAULT_PIN;
 const SENSOR_KEYS = ["inTemp", "outTemp", "inFlow", "outFlow", "pressure"];
 
 // 프론트엔드 validateThresholds(src/utils/calculations.js)와 같은 규칙으로 서버에서도 한 번 더 검증한다.
@@ -35,15 +38,14 @@ export default async function handler(req, res) {
       res.status(200).json({
         thresholds: data ? data.thresholds : null,
         updatedAt: data ? data.updatedAt : null,
-        pinRequired: Boolean(process.env.SETTINGS_PIN),
+        pinRequired: true,
       });
       return;
     }
 
     if (req.method === "POST") {
       res.setHeader("Cache-Control", "no-store");
-      const pin = process.env.SETTINGS_PIN;
-      if (pin && req.headers["x-settings-pin"] !== pin) {
+      if (req.headers["x-settings-pin"] !== settingsPin()) {
         res.status(401).json({ error: "설정 비밀번호가 맞지 않습니다." });
         return;
       }
