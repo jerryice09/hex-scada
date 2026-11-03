@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Activity, Wifi, WifiOff, Sun, Moon } from "lucide-react";
+import { Activity, Wifi, WifiOff, Sun, Moon, Volume2, VolumeX } from "lucide-react";
+import { initAlertSound, playAlertSound } from "./utils/alertSound";
 import "./styles/scada.css";
 import { LOCALES, translate } from "./data/i18n";
 
@@ -63,6 +64,9 @@ function writePref(key, value) {
   }
 }
 
+// 경고 팝업이 떠 있는 동안 경보음을 반복하는 간격 (밀리초). 더 자주/드물게 울리게 하려면 이 값만 바꾸면 된다.
+const SOP_ALARM_INTERVAL_MS = 2000;
+
 export default function HeatExchangerSCADA() {
   const [values, setValues] = useState({ ...NORMAL_BASELINE });
   const [baseline, setBaseline] = useState({ ...NORMAL_BASELINE });
@@ -109,6 +113,11 @@ export default function HeatExchangerSCADA() {
   const [sopQueue, setSopQueue] = useState([]);
   const [activeSop, setActiveSop] = useState(null);
 
+  // 경보음 음소거 토글 — 로컬 state로만 유지 (영속 저장 불필요)
+  const [soundMuted, setSoundMuted] = useState(false);
+  const soundMutedRef = useRef(soundMuted); // setInterval 클로저에서 최신 값을 읽기 위한 ref
+  soundMutedRef.current = soundMuted;
+
   const tickCounter = useRef(1);
   const transitionRef = useRef(null);
   const lastDangerCodes = useRef(new Set());
@@ -139,6 +148,15 @@ export default function HeatExchangerSCADA() {
   const isDanger = status.level === 3;
   const riskScore = computeRiskScore(values, thresholds, faultMap);
   const bucket = riskBucket(riskScore);
+
+  // ------------------------------------------------------------
+  // 경고음 unlock 준비: 브라우저 자동재생 정책 때문에 사용자의 첫 클릭/터치/키 입력이
+  // 있기 전까지는 소리를 재생할 수 없다. 마운트 시 1회 리스너를 등록해두면
+  // 첫 상호작용 이후부터 playAlertSound()가 정상적으로 소리를 낸다.
+  // ------------------------------------------------------------
+  useEffect(() => {
+    initAlertSound();
+  }, []);
 
   // ------------------------------------------------------------
   // 시계 갱신 (1초마다)
@@ -313,6 +331,20 @@ export default function HeatExchangerSCADA() {
       setSopQueue((prev) => prev.slice(1));
     }
   }, [sopQueue, activeSop, incidents]);
+
+  // ------------------------------------------------------------
+  // SOP 팝업 경보음: 팝업(경고 메시지 + 매뉴얼)이 열리면 바로 울리고,
+  // [조치 완료]를 눌러 팝업이 닫힐 때까지 SOP_ALARM_INTERVAL_MS 간격으로 계속 반복한다.
+  // 음소거 버튼을 누르면 반복 중에도 즉시 조용해진다 (soundMutedRef로 최신 값 확인).
+  // ------------------------------------------------------------
+  useEffect(() => {
+    if (!activeSop) return;
+    playAlertSound({ muted: soundMutedRef.current });
+    const id = setInterval(() => {
+      playAlertSound({ muted: soundMutedRef.current });
+    }, SOP_ALARM_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [activeSop]);
 
   const confirmSop = useCallback(() => {
     if (!activeSop) return;
@@ -535,6 +567,21 @@ export default function HeatExchangerSCADA() {
                 {hwOnline ? t("esp32_connected") : t("esp32_disconnected")}
               </div>
             )}
+
+            <button
+              onClick={() => setSoundMuted((v) => !v)}
+              title={soundMuted ? t("sound_unmute") : t("sound_mute")}
+              aria-label={soundMuted ? t("sound_unmute") : t("sound_mute")}
+              className="flex items-center gap-1.5 text-[11px] font-mono px-3 py-1.5 rounded-md"
+              style={{
+                border: `1px solid ${soundMuted ? COLORS.danger + "55" : COLORS.panelBorderLit}`,
+                color: soundMuted ? COLORS.danger : COLORS.textDim,
+                background: "transparent",
+              }}
+            >
+              {soundMuted ? <VolumeX size={12} /> : <Volume2 size={12} />}
+              {soundMuted ? t("sound_off") : t("sound_on")}
+            </button>
 
             <div
               className="flex items-center gap-2 px-4 py-2 rounded-md"

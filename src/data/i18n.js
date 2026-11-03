@@ -20,6 +20,10 @@ export const STRINGS = {
     badge_school: "여수석유화학고등학교",
     esp32_connected: "ESP32 연결됨",
     esp32_disconnected: "ESP32 연결 끊김",
+    sound_on: "경보음 켜짐",
+    sound_off: "경보음 꺼짐",
+    sound_mute: "경보음 끄기",
+    sound_unmute: "경보음 켜기",
     priority_badge: "🚨 1순위 대응",
     footer_text: "본 시스템은 바이브 코딩(AI 보조 코딩) 기법으로 구현되었습니다 · 여수석유화학고등학교 × 제4회 NAVER OGQ마켓 AI Competition",
 
@@ -195,6 +199,10 @@ export const STRINGS = {
     badge_school: "Yeosu Petrochemical High School",
     esp32_connected: "ESP32 Connected",
     esp32_disconnected: "ESP32 Disconnected",
+    sound_on: "Alarm On",
+    sound_off: "Alarm Muted",
+    sound_mute: "Mute alarm",
+    sound_unmute: "Unmute alarm",
     priority_badge: "🚨 Priority 1",
     footer_text: "This system was built using vibe coding (AI-assisted coding) · Yeosu Petrochemical High School × 4th NAVER OGQ Market AI Competition",
 
@@ -356,6 +364,10 @@ export const STRINGS = {
     badge_school: "Trường THPT Hóa dầu Yeosu",
     esp32_connected: "Đã kết nối ESP32",
     esp32_disconnected: "Mất kết nối ESP32",
+    sound_on: "Còi báo bật",
+    sound_off: "Còi báo tắt",
+    sound_mute: "Tắt còi báo",
+    sound_unmute: "Bật còi báo",
     priority_badge: "🚨 Ưu tiên 1",
     footer_text: "Hệ thống này được xây dựng bằng vibe coding (lập trình hỗ trợ AI) · Trường THPT Hóa dầu Yeosu × Cuộc thi AI NAVER OGQ Market lần 4",
 

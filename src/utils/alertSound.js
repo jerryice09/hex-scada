@@ -12,6 +12,10 @@
 // 그냥 playAlertSound()만 호출하면 된다.
 // ------------------------------------------------------------
 
+// 경보음 크기 (0~1). 기존 0.18 → 0.8로 키움. 더 크게/작게 하려면 이 값만 바꾸면 된다.
+// (기기 자체 볼륨보다 커지지는 않으므로, 노트북·휴대폰 볼륨도 올려두어야 한다.)
+const ALARM_VOLUME = 0.8;
+
 let audioCtx = null;
 let unlocked = false;
 let unlockListenersAttached = false;
@@ -78,7 +82,8 @@ export function playAlertSound({ muted = false } = {}) {
 
     // 클릭 노이즈 방지를 위한 짧은 어택/릴리즈 램프
     gain.gain.setValueAtTime(0, now + startOffset);
-    gain.gain.linearRampToValueAtTime(0.18, now + startOffset + 0.01);
+    gain.gain.linearRampToValueAtTime(ALARM_VOLUME, now + startOffset + 0.01);
+    gain.gain.setValueAtTime(ALARM_VOLUME, now + startOffset + duration - 0.02);
     gain.gain.linearRampToValueAtTime(0, now + startOffset + duration);
 
     osc.connect(gain);
@@ -87,7 +92,8 @@ export function playAlertSound({ muted = false } = {}) {
     osc.stop(now + startOffset + duration + 0.02);
   };
 
-  // 삐-삐 2음 경고음 (급박한 느낌을 위해 두 번째 음을 살짝 더 높게)
-  beep(0, 880, 0.14);
-  beep(0.18, 1046.5, 0.16);
+  // 삐-삐-삐 3음 경고음 (급박한 느낌을 위해 음을 점점 높게, 기존보다 길게)
+  beep(0, 880, 0.22);
+  beep(0.28, 1046.5, 0.22);
+  beep(0.56, 1318.5, 0.3);
 }
