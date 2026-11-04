@@ -3,7 +3,7 @@
 // 컴포넌트에 의존하지 않는 순수 함수만 모아둔다.
 // (UI 상태 X, React Hook X → 이 파일만 따로 유닛 테스트하기 쉽게 하기 위함)
 // ============================================================
-import { FAULT_HARD_BOUNDS, PRIORITY_ORDER, COLORS } from "../data/constants";
+import { FAULT_HARD_BOUNDS, PRIORITY_ORDER, COLORS, DEFAULT_THRESHOLDS, PRESSURE_KEYS } from "../data/constants";
 
 // ------------------------------------------------------------
 // 기본 수학/시간 유틸
@@ -103,7 +103,7 @@ export function calcParamLevel(key, value, thresholds) {
     if (dropPct >= 10) return 1;
     return 0;
   }
-  if (key === "pressure") {
+  if (key === "inPressure" || key === "outPressure") {
     const dangerUpper = max + (max - min) * 0.5;
     if (value > dangerUpper) return 3;
     if (value >= max) return 2;
@@ -128,7 +128,8 @@ export function evaluateStatus(values, thresholds, faultMap) {
     outTemp: level("outTemp"),
     inFlow: level("inFlow"),
     outFlow: level("outFlow"),
-    pressure: level("pressure"),
+    inPressure: level("inPressure"),
+    outPressure: level("outPressure"),
   };
 
   const dangerMessages = [];
@@ -138,14 +139,15 @@ export function evaluateStatus(values, thresholds, faultMap) {
   if (paramLevel.inTemp === 3 && paramLevel.outTemp === 3) {
     dangerMessages.push({ code: "HEAT_FAULT", text: "⚠ 열교환 이상 감지 — 누출 또는 내부 파손 가능성. 긴급 점검 필요" });
   }
-  if (paramLevel.pressure === 3) {
+  // 과압: 입구·출구 압력 중 한 곳이라도 위험 한계를 넘으면 판정 (배관 어느 구간이든 파열 위험)
+  if (paramLevel.inPressure === 3 || paramLevel.outPressure === 3) {
     dangerMessages.push({ code: "OVER_PRESSURE", text: "⚠ 과압 감지 — 배관 파열 위험. 긴급 압력 릴리프 밸브 작동 확인" });
   }
 
   // 인명피해 가능성 기준 우선순위 정렬 (과압 > 워터해머링 > 열교환이상)
   dangerMessages.sort((a, b) => PRIORITY_ORDER[a.code] - PRIORITY_ORDER[b.code]);
 
-  const overallLevel = Math.max(paramLevel.inTemp, paramLevel.outTemp, paramLevel.inFlow, paramLevel.outFlow, paramLevel.pressure);
+  const overallLevel = Math.max(...Object.values(paramLevel));
 
   return { level: overallLevel, dangerMessages, paramLevel };
 }
@@ -178,10 +180,14 @@ export function computeRiskScore(values, thresholds, faultMap) {
     totalWeight += 0.4;
   }
 
-  if (!faultMap.pressure) {
-    const center = nominalOf("pressure", thresholds) || 1;
-    const pressureDev = clamp((Math.abs(values.pressure - center) / center) * 100, 0, 100);
-    weighted += pressureDev * 0.3;
+  // 압력: 입구·출구 중 정상 중심값에서 더 많이 벗어난 쪽을 반영 (유량과 같은 "최악값" 방식)
+  const pressureKeys = PRESSURE_KEYS.filter((k) => !faultMap[k]);
+  if (pressureKeys.length > 0) {
+    const devs = pressureKeys.map((k) => {
+      const center = nominalOf(k, thresholds) || 1;
+      return clamp((Math.abs(values[k] - center) / center) * 100, 0, 100);
+    });
+    weighted += Math.max(...devs) * 0.3;
     totalWeight += 0.3;
   }
 
@@ -205,6 +211,22 @@ export function riskBucket(score) {
   if (score <= 60) return { key: "caution", label: "주의", color: COLORS.caution };
   if (score <= 80) return { key: "warning", label: "경고", color: COLORS.warning };
   return { key: "danger", label: "위험", color: COLORS.danger };
+}
+
+// ------------------------------------------------------------
+// 서버(/api/thresholds)에서 받은 임계값을 현재 센서 구성에 맞게 정리한다.
+// 압력 센서가 1개(pressure)였던 시절에 저장된 값이 오면 입구·출구 압력 둘 다에 그 범위를 쓰고,
+// 빠진 항목은 기본값으로 채운다. (예전 저장값 때문에 화면이 깨지지 않게 하기 위함)
+// ------------------------------------------------------------
+export function normalizeThresholds(raw) {
+  const ok = (r) => r && Number.isFinite(Number(r.min)) && Number.isFinite(Number(r.max)) && Number(r.min) < Number(r.max);
+  const out = {};
+  Object.keys(DEFAULT_THRESHOLDS).forEach((key) => {
+    let row = raw && raw[key];
+    if (!ok(row) && PRESSURE_KEYS.includes(key) && raw && ok(raw.pressure)) row = raw.pressure;
+    out[key] = ok(row) ? { min: Number(row.min), max: Number(row.max) } : { ...DEFAULT_THRESHOLDS[key] };
+  });
+  return out;
 }
 
 // ------------------------------------------------------------

@@ -11,7 +11,7 @@ const SCENARIO_LABEL_KEYS = {
   overPressure: "scenario_overPressure",
   heatExchangeFault: "scenario_heatExchangeFault",
 };
-const SENSOR_KEY_MAP = { inTemp: "sensor_inTemp", outTemp: "sensor_outTemp", inFlow: "sensor_inFlow", outFlow: "sensor_outFlow", pressure: "sensor_pressure" };
+const SENSOR_KEY_MAP = { inTemp: "sensor_inTemp", outTemp: "sensor_outTemp", inFlow: "sensor_inFlow", outFlow: "sensor_outFlow", inPressure: "sensor_inPressure", outPressure: "sensor_outPressure" };
 const STATUS_KEYS = ["status_normal", "status_caution", "status_warning", "status_danger"];
 
 export default function MonitorTab({ values, paramLevel, faultMap, thresholds, history, activeScenario, isTransitioning, runScenario, incidents, hwMode, largeView = false, setLargeView, t }) {
@@ -113,12 +113,13 @@ export default function MonitorTab({ values, paramLevel, faultMap, thresholds, h
           )}
         </div>
         {/* 크게 보기여도 카드 배치는 그대로 두고, 카드 안의 숫자만 커진다 */}
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
           <SensorCard icon={Thermometer} label={t(SENSOR_KEY_MAP.inTemp)} value={fmt(values.inTemp)} unit="℃" sub={sensorSub("inTemp")} level={paramLevel.inTemp} fault={faultMap.inTemp} statusLabel={t(STATUS_KEYS[paramLevel.inTemp])} faultNote={t("fault_card_note")} large={largeView} />
           <SensorCard icon={Thermometer} label={t(SENSOR_KEY_MAP.outTemp)} value={fmt(values.outTemp)} unit="℃" sub={sensorSub("outTemp")} level={paramLevel.outTemp} fault={faultMap.outTemp} statusLabel={t(STATUS_KEYS[paramLevel.outTemp])} faultNote={t("fault_card_note")} large={largeView} />
           <SensorCard icon={Droplets} label={t(SENSOR_KEY_MAP.inFlow)} value={fmt(values.inFlow, 2)} unit="L/min" sub={`${sensorSub("inFlow")} (G1/2 Brass)`} level={paramLevel.inFlow} fault={faultMap.inFlow} statusLabel={t(STATUS_KEYS[paramLevel.inFlow])} faultNote={t("fault_card_note")} large={largeView} />
           <SensorCard icon={Droplets} label={t(SENSOR_KEY_MAP.outFlow)} value={fmt(values.outFlow, 2)} unit="L/min" sub={`${sensorSub("outFlow")} (YF-S201)`} level={paramLevel.outFlow} fault={faultMap.outFlow} statusLabel={t(STATUS_KEYS[paramLevel.outFlow])} faultNote={t("fault_card_note")} large={largeView} />
-          <SensorCard icon={Gauge} label={t(SENSOR_KEY_MAP.pressure)} value={fmt(values.pressure, 0)} unit="kPa" sub={sensorSub("pressure")} level={paramLevel.pressure} fault={faultMap.pressure} statusLabel={t(STATUS_KEYS[paramLevel.pressure])} faultNote={t("fault_card_note")} large={largeView} />
+          <SensorCard icon={Gauge} label={t(SENSOR_KEY_MAP.inPressure)} value={fmt(values.inPressure, 0)} unit="kPa" sub={sensorSub("inPressure")} level={paramLevel.inPressure} fault={faultMap.inPressure} statusLabel={t(STATUS_KEYS[paramLevel.inPressure])} faultNote={t("fault_card_note")} large={largeView} />
+          <SensorCard icon={Gauge} label={t(SENSOR_KEY_MAP.outPressure)} value={fmt(values.outPressure, 0)} unit="kPa" sub={sensorSub("outPressure")} level={paramLevel.outPressure} fault={faultMap.outPressure} statusLabel={t(STATUS_KEYS[paramLevel.outPressure])} faultNote={t("fault_card_note")} large={largeView} />
         </div>
       </section>
 

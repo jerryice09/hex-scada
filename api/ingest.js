@@ -2,7 +2,7 @@
 // ESP32 → POST /api/ingest  (헤더: x-api-key, 바디: JSON 센서값)
 import { redisSet } from "./_redis.js";
 
-const SENSOR_KEYS = ["inTemp", "outTemp", "inFlow", "outFlow", "pressure"];
+const SENSOR_KEYS = ["inTemp", "outTemp", "inFlow", "outFlow", "inPressure", "outPressure"];
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -18,6 +18,11 @@ export default async function handler(req, res) {
   }
 
   const body = req.body || {};
+  // 예전 펌웨어 호환: 압력이 1개("pressure")만 오면 입구·출구 압력 모두 그 값으로 채운다.
+  if (body.pressure !== undefined) {
+    if (body.inPressure === undefined) body.inPressure = body.pressure;
+    if (body.outPressure === undefined) body.outPressure = body.pressure;
+  }
   const payload = {};
   for (const key of SENSOR_KEYS) {
     const v = Number(body[key]);

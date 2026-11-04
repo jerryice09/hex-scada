@@ -37,6 +37,7 @@ import {
   riskBucket,
   nominalOf,
   validateThresholds,
+  normalizeThresholds,
 } from "./utils/calculations";
 
 import SopModal from "./components/SopModal";
@@ -158,7 +159,8 @@ export default function HeatExchangerSCADA() {
     outTemp: isSensorFault("outTemp", values.outTemp, thresholds),
     inFlow: isSensorFault("inFlow", values.inFlow, thresholds),
     outFlow: isSensorFault("outFlow", values.outFlow, thresholds),
-    pressure: isSensorFault("pressure", values.pressure, thresholds),
+    inPressure: isSensorFault("inPressure", values.inPressure, thresholds),
+    outPressure: isSensorFault("outPressure", values.outPressure, thresholds),
   };
 
   const status = evaluateStatus(values, thresholds, faultMap);
@@ -209,7 +211,8 @@ export default function HeatExchangerSCADA() {
         outTemp: jitter(baseline.outTemp, 0.35),
         inFlow: Math.max(0, jitter(baseline.inFlow, 0.18)),
         outFlow: Math.max(0, jitter(baseline.outFlow, 0.18)),
-        pressure: jitter(baseline.pressure, 4),
+        inPressure: jitter(baseline.inPressure, 4),
+        outPressure: jitter(baseline.outPressure, 4),
       }));
     }, TICK_MS);
     return () => clearInterval(id);
@@ -236,7 +239,9 @@ export default function HeatExchangerSCADA() {
             outTemp: data.values.outTemp,
             inFlow: data.values.inFlow,
             outFlow: data.values.outFlow,
-            pressure: data.values.pressure,
+            // 예전 펌웨어(압력 1개, "pressure")가 보내는 값도 받아서 입구·출구 압력 둘 다에 쓴다
+            inPressure: data.values.inPressure ?? data.values.pressure,
+            outPressure: data.values.outPressure ?? data.values.pressure,
           });
           setHwOnline(true);
           setHwLastSeen(data.lastSeen);
@@ -281,7 +286,8 @@ export default function HeatExchangerSCADA() {
             outTemp: Number(v.outTemp.toFixed(2)),
             inFlow: Number(v.inFlow.toFixed(2)),
             outFlow: Number(v.outFlow.toFixed(2)),
-            pressure: Number(v.pressure.toFixed(1)),
+            inPressure: Number(v.inPressure.toFixed(1)),
+            outPressure: Number(v.outPressure.toFixed(1)),
           },
         ];
         return next.length > MAX_CHART_HISTORY ? next.slice(next.length - MAX_CHART_HISTORY) : next;
@@ -404,7 +410,8 @@ export default function HeatExchangerSCADA() {
           outTemp: lerp(start.outTemp, target.outTemp, eased),
           inFlow: lerp(start.inFlow, target.inFlow, eased),
           outFlow: lerp(start.outFlow, target.outFlow, eased),
-          pressure: lerp(start.pressure, target.pressure, eased),
+          inPressure: lerp(start.inPressure, target.inPressure, eased),
+          outPressure: lerp(start.outPressure, target.outPressure, eased),
         });
 
         if (t >= 1) {
@@ -447,7 +454,9 @@ export default function HeatExchangerSCADA() {
   const draftThresholdsRef = useRef(draftThresholds);
   draftThresholdsRef.current = draftThresholds;
 
-  const applyServerThresholds = useCallback((next) => {
+  const applyServerThresholds = useCallback((raw) => {
+    // 예전 형식(압력 1개)으로 저장된 값도 현재 센서 구성(입구·출구 압력)에 맞게 정리
+    const next = normalizeThresholds(raw);
     const current = thresholdsRef.current;
     if (JSON.stringify(next) === JSON.stringify(current)) return;
     // 설정 탭에서 값을 고치는 중(입력값 ≠ 적용값)이면 입력 중인 값은 건드리지 않는다.
@@ -558,7 +567,8 @@ export default function HeatExchangerSCADA() {
       { key: "outTemp", already: paramLevel.outTemp === 3, fault: faultMap.outTemp, slope: linRegSlope(get("outTemp")) },
       { key: "inFlow", already: paramLevel.inFlow === 3, fault: faultMap.inFlow, slope: linRegSlope(get("inFlow")) },
       { key: "outFlow", already: paramLevel.outFlow === 3, fault: faultMap.outFlow, slope: linRegSlope(get("outFlow")) },
-      { key: "pressure", already: paramLevel.pressure === 3, fault: faultMap.pressure, slope: linRegSlope(get("pressure")) },
+      { key: "inPressure", already: paramLevel.inPressure === 3, fault: faultMap.inPressure, slope: linRegSlope(get("inPressure")) },
+      { key: "outPressure", already: paramLevel.outPressure === 3, fault: faultMap.outPressure, slope: linRegSlope(get("outPressure")) },
     ].map((r) => {
       if (r.fault) return { ...r, ticks: Infinity, minutes: Infinity };
       let ticks;
@@ -573,8 +583,9 @@ export default function HeatExchangerSCADA() {
         const nominal = nominalOf(r.key, thresholds) || 1;
         ticks = ticksToLowerThreshold(values[r.key], r.slope, nominal * 0.7, 0.07);
       } else {
-        const { min, max } = thresholds.pressure;
-        ticks = ticksToUpperThreshold(values.pressure, r.slope, max + (max - min) * 0.5, 1.8);
+        // 입구·출구 압력: 위험 상한(상한 + 정상폭의 50%)까지 남은 시간
+        const { min, max } = thresholds[r.key];
+        ticks = ticksToUpperThreshold(values[r.key], r.slope, max + (max - min) * 0.5, 1.8);
       }
       return { ...r, ticks, minutes: r.already ? 0 : ticks === Infinity ? Infinity : ticks / 60 };
     });

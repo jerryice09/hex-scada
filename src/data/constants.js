@@ -36,14 +36,19 @@ export const STATUS_META = {
   3: { label: "위험", color: COLORS.danger, glow: "0 0 18px rgba(220,38,38,0.6)" },
 };
 
-export const UNITS = { inTemp: "℃", outTemp: "℃", inFlow: "L/min", outFlow: "L/min", pressure: "kPa" };
+export const UNITS = { inTemp: "℃", outTemp: "℃", inFlow: "L/min", outFlow: "L/min", inPressure: "kPa", outPressure: "kPa" };
+
+// 센서 6종의 키 목록 (순서 = 화면 표시 순서). 압력은 입구/출구 2개 지점에서 측정한다.
+export const SENSOR_KEYS = ["inTemp", "outTemp", "inFlow", "outFlow", "inPressure", "outPressure"];
+export const PRESSURE_KEYS = ["inPressure", "outPressure"];
 
 export const SENSOR_LABELS = {
   inTemp: "입구 온도",
   outTemp: "출구 온도",
   inFlow: "입구 유량",
   outFlow: "출구 유량",
-  pressure: "배관 압력",
+  inPressure: "입구 압력",
+  outPressure: "출구 압력",
 };
 
 // 여수석유화학고 실습 환경 기준 "정상 범위" 기본값
@@ -53,12 +58,14 @@ export const DEFAULT_THRESHOLDS = {
   outTemp: { min: 30, max: 40 },
   inFlow: { min: 8, max: 12 },
   outFlow: { min: 8, max: 12 },
-  pressure: { min: 200, max: 400 },
+  inPressure: { min: 200, max: 400 },
+  outPressure: { min: 200, max: 400 },
 };
 
 // 센서 시뮬레이션(지터)이 흔들리는 중심값 — "정상 임계값"과는 별개의 개념이다.
 // 임계값(DEFAULT_THRESHOLDS)을 바꿔도 시뮬레이션 베이스라인 자체는 바뀌지 않는다.
-export const NORMAL_BASELINE = { inTemp: 70, outTemp: 35, inFlow: 10, outFlow: 10, pressure: 300 };
+// 출구 압력은 열교환기를 지나며 생기는 압력 손실(차압)만큼 입구보다 조금 낮게 둔다 (300 → 280kPa).
+export const NORMAL_BASELINE = { inTemp: 70, outTemp: 35, inFlow: 10, outFlow: 10, inPressure: 300, outPressure: 280 };
 
 // 하드웨어적으로 "절대 나올 수 없는" 값의 최소 경계.
 // 설정 탭에서 정상범위를 아무리 넓게 조정해도 이 절대값 아래로는 내려가지 않는다.
@@ -68,7 +75,8 @@ export const FAULT_HARD_BOUNDS = {
   outTemp: { min: -10, max: 200 },
   inFlow: { min: 0, max: 50 },
   outFlow: { min: 0, max: 50 },
-  pressure: { min: 0, max: 1000 },
+  inPressure: { min: 0, max: 1000 },
+  outPressure: { min: 0, max: 1000 },
 };
 
 // 시나리오 시뮬레이터가 5초에 걸쳐 도달시키는 목표값 프로파일
@@ -77,17 +85,17 @@ export const SCENARIOS = {
   waterHammer: {
     label: "워터해머링",
     icon: "💧",
-    target: { inTemp: 70, outTemp: 33, inFlow: 9.6, outFlow: 6.4, pressure: 470 },
+    target: { inTemp: 70, outTemp: 33, inFlow: 9.6, outFlow: 6.4, inPressure: 470, outPressure: 455 },
   },
   overPressure: {
     label: "과압 위험",
     icon: "💥",
-    target: { inTemp: 71, outTemp: 36, inFlow: 7.4, outFlow: 9.5, pressure: 552 },
+    target: { inTemp: 71, outTemp: 36, inFlow: 7.4, outFlow: 9.5, inPressure: 552, outPressure: 528 },
   },
   heatExchangeFault: {
     label: "열교환 이상",
     icon: "🌡",
-    target: { inTemp: 51, outTemp: 53, inFlow: 9.7, outFlow: 9.6, pressure: 298 },
+    target: { inTemp: 51, outTemp: 53, inFlow: 9.7, outFlow: 9.6, inPressure: 298, outPressure: 278 },
   },
 };
 

@@ -26,11 +26,13 @@ export default function DiagramTab({ paramLevel, dangerCodes, t }) {
   // 1단계: 센서값 기준 기본 레벨
   const heatFault = dangerCodes.includes("HEAT_FAULT");
   const levels = {
-    in: Math.max(paramLevel.inTemp, paramLevel.inFlow, heatFault ? 3 : 0),
+    // 압력 센서 위치: 입구 압력 = 온수 입구 배관, 출구 압력 = 출구 배관
+    in: Math.max(paramLevel.inTemp, paramLevel.inFlow, paramLevel.inPressure, heatFault ? 3 : 0),
     // 냉각수 입구에는 아직 전용 센서가 없어 열교환 이상(입출구 온도 동시 급변)일 때만 강조한다.
     inCold: heatFault ? 3 : 0,
-    out: Math.max(paramLevel.outTemp, heatFault ? 3 : 0),
-    vent: paramLevel.pressure,
+    out: Math.max(paramLevel.outTemp, paramLevel.outPressure, heatFault ? 3 : 0),
+    // 벤트(압력 릴리프)는 입구·출구 중 더 높은 압력 위험도를 따른다
+    vent: Math.max(paramLevel.inPressure, paramLevel.outPressure),
     drain: paramLevel.outFlow,
   };
 

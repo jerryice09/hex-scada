@@ -11,7 +11,7 @@ import { redisGet, redisSet } from "./_redis.js";
 const KEY = "hex-scada:thresholds";
 const DEFAULT_PIN = "1234";
 const settingsPin = () => process.env.SETTINGS_PIN || DEFAULT_PIN;
-const SENSOR_KEYS = ["inTemp", "outTemp", "inFlow", "outFlow", "pressure"];
+const SENSOR_KEYS = ["inTemp", "outTemp", "inFlow", "outFlow", "inPressure", "outPressure"];
 
 // 프론트엔드 validateThresholds(src/utils/calculations.js)와 같은 규칙으로 서버에서도 한 번 더 검증한다.
 function validate(input) {

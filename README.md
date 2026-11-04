@@ -62,7 +62,7 @@ HEX-SCADA는 이 문제를 실제 센서 하드웨어(ESP32)와 무료 클라우
 ## 아키텍처
 
 ```
-[ESP32 + 센서(DHT-22 온도 · 유량 · 압력)]
+[ESP32 + 센서(DHT-22 온도 · 유량 · 입구·출구 압력)]
             │ HTTPS POST (1초마다)
             ▼
 [Vercel 서버리스 함수 /api/ingest] ───────▶ [Upstash Redis]

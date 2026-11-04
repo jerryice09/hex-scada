@@ -9,10 +9,12 @@
     - 무지개 디지털 서보 DS3120MG             → 밸브 개폐 액추에이터 (기본은 비활성화 — 아래 안전 안내 필독)
     - 적외선(IR) 송수신 센서 모듈             → 용도 미확정. 아래 TODO 참고, 현재 배선 안 함
 
-  ⚠ 현재 BOM에는 "출구 온도" 센서와 "배관 압력" 센서가 없습니다.
+  압력 센서: 입구 압력·출구 압력 2개소 (아날로그 출력형 압력 트랜스미터 기준)
+
+  ⚠ 현재 BOM에는 "출구 온도" 센서와 "압력" 센서가 없습니다.
      - 출구 온도: 아래 readOutTempC()는 임시로 입구 온도값을 그대로 반환합니다(자리표시자).
        DHT-22를 하나 더 구매해 출구측에 부착하는 것을 권장합니다.
-     - 배관 압력: 아래 readPressureKpa()는 아날로그 자리표시자입니다. 실제 압력 센서 구매 전까지는
+     - 입구·출구 압력: 아래 readPressureKpa()는 아날로그 자리표시자입니다. 실제 압력 센서 구매 전까지는
        참고용으로만 쓰고, 대시보드의 "과압" 판단은 신뢰하지 마세요.
 */
 
@@ -38,7 +40,8 @@ const bool ENABLE_AUTO_VALVE_CONTROL = false;
 const int PIN_DHT22 = 4;          // DHT-22 데이터 핀
 const int PIN_FLOW_IN = 26;       // 입구 유량센서 펄스 (G1/2 Brass)
 const int PIN_FLOW_OUT = 27;      // 출구 유량센서 펄스 (YF-S201)
-const int PIN_PRESSURE = 32;      // 압력 센서 자리표시자 (ADC1) — 현재 BOM에 실제 압력센서 없음
+const int PIN_PRESSURE_IN = 32;   // 입구 압력 센서 아날로그 출력 (ADC1) — 현재 BOM에 실제 압력센서 없음
+const int PIN_PRESSURE_OUT = 34;  // 출구 압력 센서 아날로그 출력 (ADC1, 입력 전용 핀) — 자리표시자
 const int PIN_BUZZER = 25;        // 능동 부저 (디지털 출력)
 const int PIN_SERVO = 33;         // 서보(DS3120MG) 신호선 (PWM)
 // IR 송수신 모듈: 용도 미확정으로 미배선. 확정되면 여기에 핀 추가.
@@ -56,7 +59,7 @@ const int SERVO_CLOSED_ANGLE = 0;
 //  임계값을 바꾸면 이 값들도 수동으로 맞춰줘야 로컬 부저/서보 판단이 대시보드와 일치합니다.)
 const float NOMINAL_FLOW_LPM = 10.0;
 const float FLOW_DANGER_DROP_PCT = 30.0;   // 30% 이상 감소 시 위험(워터해머링)
-const float PRESSURE_DANGER_KPA = 500.0;   // 500kPa 초과 시 위험(과압) — 압력센서 미장착 상태에서는 참고용
+const float PRESSURE_DANGER_KPA = 500.0;   // 입구·출구 중 하나라도 500kPa 초과 시 위험(과압) — 압력센서 미장착 상태에서는 참고용
 
 volatile long pulseCountIn = 0;
 volatile long pulseCountOut = 0;
@@ -118,10 +121,10 @@ float readPressureKpa(int pin) {
 
 // 로컬(오프라인) 위험 판단: WiFi/클라우드가 끊겨도 부저는 동작하도록 ESP32에서 직접 계산.
 // 대시보드의 evaluateStatus()를 간소화한 버전이며, 출구온도 미측정으로 "열교환 이상"은 제외됨.
-bool isLocalDanger(float outFlowLpm, float pressureKpa) {
+bool isLocalDanger(float outFlowLpm, float inPressureKpa, float outPressureKpa) {
   float flowDropPct = ((NOMINAL_FLOW_LPM - outFlowLpm) / NOMINAL_FLOW_LPM) * 100.0;
   bool waterHammer = flowDropPct >= FLOW_DANGER_DROP_PCT;
-  bool overPressure = pressureKpa > PRESSURE_DANGER_KPA;
+  bool overPressure = inPressureKpa > PRESSURE_DANGER_KPA || outPressureKpa > PRESSURE_DANGER_KPA;
   return waterHammer || overPressure;
 }
 
@@ -145,10 +148,11 @@ void loop() {
     inTemp = 0; // TODO: 재시도 로직 또는 마지막 정상값 유지 로직으로 개선 권장
   }
   float outTemp = readOutTempC(inTemp);
-  float pressure = readPressureKpa(PIN_PRESSURE);
+  float inPressure = readPressureKpa(PIN_PRESSURE_IN);
+  float outPressure = readPressureKpa(PIN_PRESSURE_OUT);
 
   // ---- 로컬 부저 경보 (WiFi 상태와 무관하게 항상 동작) ----
-  bool danger = isLocalDanger(outFlow, pressure);
+  bool danger = isLocalDanger(outFlow, inPressure, outPressure);
   digitalWrite(PIN_BUZZER, danger ? HIGH : LOW);
 
   // ---- 서보 밸브 제어 (기본 비활성화, ENABLE_AUTO_VALVE_CONTROL로만 활성화) ----
@@ -174,7 +178,8 @@ void loop() {
   json += "\"outTemp\":" + String(outTemp, 2) + ",";
   json += "\"inFlow\":" + String(inFlow, 2) + ",";
   json += "\"outFlow\":" + String(outFlow, 2) + ",";
-  json += "\"pressure\":" + String(pressure, 1);
+  json += "\"inPressure\":" + String(inPressure, 1) + ",";
+  json += "\"outPressure\":" + String(outPressure, 1);
   json += "}";
 
   int code = http.POST(json);
