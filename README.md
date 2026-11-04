@@ -194,7 +194,8 @@ api/
   ingest.js              # ESP32 → 센서값 수신 엔드포인트
   sensors.js               # 프론트엔드 → 최신 센서값 조회 엔드포인트
 hardware/
-  hex_scada_esp32_node.ino  # ESP32 센서 노드 펌웨어
+  hex_scada_uno_node.ino    # 실제 실습 장비용 Arduino Uno 센서 노드 (DS18B20 온도 2·유량 2·입구/출구 압력 2, USB/블루투스 → 중계 앱)
+  hex_scada_esp32_node.ino  # ESP32 와이파이 직접 전송 버전 (참고용)
   3d/heat_exchanger.scad      # 열교환기 실측 3D 모델 원본 (OpenSCAD)
 public/
   models/heat_exchanger_rig.glb # 웹 3D 뷰어용 설비 모델 (Blender → GLB, meshopt 압축)

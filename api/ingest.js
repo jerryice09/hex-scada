@@ -18,10 +18,13 @@ export default async function handler(req, res) {
   }
 
   const body = req.body || {};
-  // 예전 펌웨어 호환: 압력이 1개("pressure")만 오면 입구·출구 압력 모두 그 값으로 채운다.
-  if (body.pressure !== undefined) {
-    if (body.inPressure === undefined) body.inPressure = body.pressure;
-    if (body.outPressure === undefined) body.outPressure = body.pressure;
+  // 예전 이름 호환 (hardware/hex_scada_uno_node.ino의 LEGACY_JSON_KEYS 참고)
+  //   "pressure"  → 입구 압력,  "pressure2" → 출구 압력
+  //   출구 압력이 아예 없는 아주 예전 코드면 입구 압력 값을 출구에도 채운다.
+  if (body.inPressure === undefined && body.pressure !== undefined) body.inPressure = body.pressure;
+  if (body.outPressure === undefined) {
+    if (body.pressure2 !== undefined) body.outPressure = body.pressure2;
+    else if (body.pressure !== undefined) body.outPressure = body.pressure;
   }
   const payload = {};
   for (const key of SENSOR_KEYS) {
