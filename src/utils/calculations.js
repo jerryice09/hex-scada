@@ -214,6 +214,47 @@ export function riskBucket(score) {
 }
 
 // ------------------------------------------------------------
+// 시뮬레이션을 현재 정상 범위(임계값)에 맞추기
+// 문제점 수정: 시뮬레이션 기준값·시나리오 목표값이 기본 임계값(예: 압력 200~400kPa) 기준의
+// 고정 숫자라서, 설정 탭에서 실제 장비 기준(예: 압력 40~80kPa)으로 바꾸면 정상 운전인데도
+// "300kPa → 과압 위험"이 떠 버렸다. 이제 기본 임계값 기준으로 만든 값을 현재 임계값으로 비례 환산한다.
+//  - 온도·압력: 정상 범위(하한~상한) 안에서의 위치를 그대로 유지  예) 기본 200~400의 300(가운데) → 40~80의 60
+//  - 유량    : 정상 중심값 대비 비율을 유지 (판정이 "중심 대비 몇 % 감소"이기 때문)  예) 10의 64% → 6의 64%
+// 기본 임계값일 때는 원래 숫자가 그대로 나온다.
+// ------------------------------------------------------------
+export function scaleToThresholds(target, thresholds) {
+  const out = {};
+  Object.keys(target).forEach((key) => {
+    const def = DEFAULT_THRESHOLDS[key];
+    const cur = thresholds[key];
+    const v = target[key];
+    if (!def || !cur) {
+      out[key] = v;
+    } else if (key === "inFlow" || key === "outFlow") {
+      const defNominal = (def.min + def.max) / 2 || 1;
+      out[key] = v * (((cur.min + cur.max) / 2) / defNominal);
+    } else {
+      out[key] = cur.min + (v - def.min) * ((cur.max - cur.min) / (def.max - def.min || 1));
+    }
+  });
+  return out;
+}
+
+// 정상 지터(흔들림) 폭도 정상 범위 크기에 비례시킨다. (기본 임계값에서 온도 ±0.35, 유량 ±0.18, 압력 ±4)
+export function jitterMagnitudes(thresholds) {
+  const range = (k) => thresholds[k].max - thresholds[k].min;
+  const nominal = (k) => (thresholds[k].min + thresholds[k].max) / 2;
+  return {
+    inTemp: range("inTemp") * 0.035,
+    outTemp: range("outTemp") * 0.035,
+    inFlow: nominal("inFlow") * 0.018,
+    outFlow: nominal("outFlow") * 0.018,
+    inPressure: range("inPressure") * 0.02,
+    outPressure: range("outPressure") * 0.02,
+  };
+}
+
+// ------------------------------------------------------------
 // 서버(/api/thresholds)에서 받은 임계값을 현재 센서 구성에 맞게 정리한다.
 // 압력 센서가 1개(pressure)였던 시절에 저장된 값이 오면 입구·출구 압력 둘 다에 그 범위를 쓰고,
 // 빠진 항목은 기본값으로 채운다. (예전 저장값 때문에 화면이 깨지지 않게 하기 위함)

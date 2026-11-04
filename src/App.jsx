@@ -38,6 +38,8 @@ import {
   nominalOf,
   validateThresholds,
   normalizeThresholds,
+  scaleToThresholds,
+  jitterMagnitudes,
 } from "./utils/calculations";
 
 import SopModal from "./components/SopModal";
@@ -206,17 +208,18 @@ export default function HeatExchangerSCADA() {
   useEffect(() => {
     const id = setInterval(() => {
       if (isTransitioning || hwMode) return;
+      const mag = jitterMagnitudes(thresholds); // 흔들림 폭도 현재 정상 범위 크기에 비례
       setValues(() => ({
-        inTemp: jitter(baseline.inTemp, 0.35),
-        outTemp: jitter(baseline.outTemp, 0.35),
-        inFlow: Math.max(0, jitter(baseline.inFlow, 0.18)),
-        outFlow: Math.max(0, jitter(baseline.outFlow, 0.18)),
-        inPressure: jitter(baseline.inPressure, 4),
-        outPressure: jitter(baseline.outPressure, 4),
+        inTemp: jitter(baseline.inTemp, mag.inTemp),
+        outTemp: jitter(baseline.outTemp, mag.outTemp),
+        inFlow: Math.max(0, jitter(baseline.inFlow, mag.inFlow)),
+        outFlow: Math.max(0, jitter(baseline.outFlow, mag.outFlow)),
+        inPressure: Math.max(0, jitter(baseline.inPressure, mag.inPressure)),
+        outPressure: Math.max(0, jitter(baseline.outPressure, mag.outPressure)),
       }));
     }, TICK_MS);
     return () => clearInterval(id);
-  }, [baseline, isTransitioning, hwMode]);
+  }, [baseline, isTransitioning, hwMode, thresholds]);
 
   // ------------------------------------------------------------
   // 실시간 하드웨어 폴링: hwMode가 켜져 있을 때 1초마다 /api/sensors를 조회해
@@ -395,7 +398,8 @@ export default function HeatExchangerSCADA() {
     (key) => {
       if (transitionRef.current) clearInterval(transitionRef.current);
       setActiveScenario(key);
-      const target = SCENARIOS[key].target;
+      // 시나리오 목표값을 현재 정상 범위에 맞게 환산 (실제 장비 기준으로 바꿔도 시나리오가 똑같이 재현됨)
+      const target = scaleToThresholds(SCENARIOS[key].target, thresholdsRef.current);
       const start = { ...values };
       const startTime = Date.now();
 
@@ -454,6 +458,22 @@ export default function HeatExchangerSCADA() {
   const draftThresholdsRef = useRef(draftThresholds);
   draftThresholdsRef.current = draftThresholds;
 
+  // 임계값이 바뀌는 바로 그 순간에 시뮬레이션 기준값도 새 정상 범위로 옮긴다.
+  // (setThresholds와 같은 업데이트 안에서 처리 → 접속 직후 "예전 기준값 × 새 임계값"이 한 번이라도
+  //  겹쳐 가짜 위험·사고 이력·경보음이 생기는 것을 막는다.)
+  // 하드웨어 모드이거나 시나리오가 진행 중이면 실제 값/진행 중인 시나리오를 건드리지 않는다.
+  const simStateRef = useRef({ hwMode, isTransitioning, activeScenario });
+  simStateRef.current = { hwMode, isTransitioning, activeScenario };
+  const rebaseSimulation = useCallback((next) => {
+    const { hwMode: hw, isTransitioning: moving, activeScenario: scenario } = simStateRef.current;
+    if (hw || moving) return;
+    const base = scaleToThresholds((SCENARIOS[scenario] || SCENARIOS.normal).target, next);
+    setBaseline(base);
+    setValues(base);
+    // 예전 기준의 차트·예측 기록이 남아 있으면 큰 값 점프가 "급변 추세"로 잘못 예측되므로 새로 시작
+    setHistory([{ t: tickCounter.current++, ...base }]);
+  }, []);
+
   const applyServerThresholds = useCallback((raw) => {
     // 예전 형식(압력 1개)으로 저장된 값도 현재 센서 구성(입구·출구 압력)에 맞게 정리
     const next = normalizeThresholds(raw);
@@ -464,7 +484,8 @@ export default function HeatExchangerSCADA() {
       setDraftThresholds({ ...next });
     }
     setThresholds({ ...next });
-  }, []);
+    rebaseSimulation(next);
+  }, [rebaseSimulation]);
 
   useEffect(() => {
     let cancelled = false;
@@ -534,9 +555,10 @@ export default function HeatExchangerSCADA() {
       setValidationErrors([]);
       setThresholds({ ...next });
       setDraftThresholds({ ...next });
+      rebaseSimulation(next);
       showToast("success", t(sharedThresholdsRef.current ? "toast_applied_shared" : "toast_applied", { time: nowStr() }));
     },
-    [saveSharedThresholds, showToast, t]
+    [saveSharedThresholds, showToast, t, rebaseSimulation]
   );
 
   const saveThresholds = useCallback(() => {
