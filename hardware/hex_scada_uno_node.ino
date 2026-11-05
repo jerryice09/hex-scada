@@ -10,11 +10,8 @@
  *  출구 유량센서 (신호)      D3       외부 인터럽트 INT1 (변경 금지)
  *  입구 온도 DS18B20 DATA    D8       모듈에 풀업 없으면 4.7kΩ (DATA-5V 사이)
  *  출구 온도 DS18B20 DATA    D9       모듈에 풀업 없으면 4.7kΩ (DATA-5V 사이)
- *  입구 압력센서 (아날로그)  A1       열교환기 입구 쪽 배관 → 웹 "입구 압력"
- *  출구 압력센서 (아날로그)  A2       열교환기 출구 쪽 배관 → 웹 "출구 압력"
- *    └ 압력센서: DFRobot SEN0257 (Gravity 아날로그 수압센서)
- *      노란선=신호(A1/A2), 빨간선=5V, 검은선=GND
- *      출력 0.5~4.5V, 측정 범위 0~1MPa(1000kPa) — 스티커의 1.6MPa는 측정 범위가 아님
+ *  압력센서 1 (아날로그)     A1
+ *  압력센서 2 (아날로그)     A2
  *  능동 부저                 D5
  *  서보 (밸브) 신호          D6
  *  블루투스 모듈 TXD         D10      (우노 RX)
@@ -41,8 +38,8 @@ const int PIN_BUZZER = 5;          // 능동 부저
 const int PIN_SERVO = 6;           // 서보 신호선
 const int PIN_BT_RX = 10;          // 블루투스 모듈 TXD -> 우노 10번
 const int PIN_BT_TX = 11;          // 블루투스 모듈 RXD <- 우노 11번 (분압 권장)
-const int PIN_PRESSURE_IN = A1;    // 입구 압력센서 (미연결 시 값이 떠돌 수 있음)
-const int PIN_PRESSURE_OUT = A2;   // 출구 압력센서
+const int PRESSURE_COUNT = 2;
+const int PIN_PRESSURE[PRESSURE_COUNT] = {A1, A2};  // 압력센서 1, 2 (미연결 시 값이 떠돌 수 있음)
 
 SoftwareSerial BTSerial(PIN_BT_RX, PIN_BT_TX);
 
@@ -56,13 +53,7 @@ Servo valveServo;
 // ---------------- 동작 옵션 ----------------
 const bool ENABLE_BLUETOOTH_OUTPUT = true;   // 블루투스로도 송출할지 (USB만 쓰면 false)
 const bool ENABLE_AUTO_VALVE_CONTROL = false;
-const bool USE_PRESSURE_FOR_DANGER = false;  // 압력 센서 시험이 끝나 값이 정상으로 확인된 뒤 true
-// 웹으로 보내는 JSON의 압력 이름.
-//   false(기본): "inPressure"(입구), "outPressure"(출구)  ← 웹사이트가 쓰는 이름
-//   true       : 예전 이름 "pressure"(입구), "pressure2"(출구)
-//   중계 앱이 예전 이름만 알아듣는 경우(업로드 후 웹 값이 갱신되지 않을 때)에만 true로 바꾼다.
-//   웹 서버(/api/ingest)는 두 방식 모두 받는다.
-const bool LEGACY_JSON_KEYS = false;
+const bool USE_PRESSURE_FOR_DANGER = false;  // 압력 센서를 실제로 연결한 뒤 true
 
 const int SERVO_OPEN_ANGLE = 90;
 const int SERVO_CLOSED_ANGLE = 0;
@@ -73,23 +64,6 @@ const float FLOW_DANGER_DROP_PCT = 30.0;
 const float MIN_FLOW_FOR_JUDGE_LPM = 1.0;    // 입구 유량이 이 값 이상일 때만 수격 판단
 const float PRESSURE_DANGER_KPA = 500.0;
 const float FLOW_K_FACTOR = 7.5;             // YF-S201 기준: 주파수(Hz) = 7.5 x 유량(L/min)
-
-// ---------------- 압력센서 환산 (DFRobot SEN0257) ----------------
-// 제조사 공식 예제와 같은 식:  압력(kPa) = (센서 전압 - 영점 전압) x 250
-//   → 전압 4V 증가 = 1000kPa(1MPa). 대기압(게이지압 0)에서 약 0.48~0.5V가 나온다.
-// 예전 코드는 0~5V를 0~600kPa로 계산해서, 압력이 0인데도 0.5V 때문에 약 60kPa로 보였다.
-//
-// [영점 맞추기] 센서마다 영점 전압이 조금씩 다르다 (제조사 예제 기본값 0.483V).
-//  1) 펌프를 끄고 배관 압력을 뺀 상태에서 아래 PRINT_PRESSURE_VOLTAGE = true 로 업로드
-//  2) 시리얼 모니터의 "inPressureV", "outPressureV" 중 가장 낮게 나오는 값을 확인
-//  3) 그 값을 PRESSURE_IN_V_ZERO / PRESSURE_OUT_V_ZERO 에 각각 적고 다시 업로드
-const float PRESSURE_IN_V_ZERO = 0.483;      // 입구 압력센서(A1) 영점 전압
-const float PRESSURE_OUT_V_ZERO = 0.483;     // 출구 압력센서(A2) 영점 전압
-const float PRESSURE_KPA_PER_V = 250.0;      // 1V당 250kPa (0.5~4.5V → 0~1000kPa)
-const float ADC_REF_V = 5.0;                 // 우노 아날로그 기준 전압(5V)
-// true면 JSON에 센서 전압(inPressureV, outPressureV)도 함께 보낸다. 영점 맞추기·시험용.
-// 웹 서버는 모르는 항목을 무시하므로 켜 둬도 화면에는 영향이 없다.
-const bool PRINT_PRESSURE_VOLTAGE = true;
 
 // ---------------- 유량 펄스 카운터 ----------------
 volatile long pulseCountIn = 0;
@@ -145,21 +119,16 @@ float pulsesToLpm(long pulses, float dtSec) {
   return (pulses / dtSec) / FLOW_K_FACTOR;
 }
 
-// 8회 평균한 센서 출력 전압(V)
-float readPressureVolts(int pin) {
+// DFRobot SEN0257 수압센서: 압력(kPa) = (전압 - 0.483) x 250  (0.5~4.5V → 0~1000kPa)
+float readPressureKpa(int pin) {
   long sum = 0;
   for (int i = 0; i < 8; i++) sum += analogRead(pin);
-  return (sum / 8.0) * ADC_REF_V / 1023.0;
-}
-
-// 전압 → 게이지 압력(kPa). 예전 map()은 정수 계산이라 소수점이 잘려 실수 계산으로 바꿨다.
-float voltsToKpa(float volts, float vZero) {
-  float kpa = (volts - vZero) * PRESSURE_KPA_PER_V;
-  if (kpa < 0) kpa = 0;  // 압력 0 근처에서 생기는 미세한 음수(노이즈·영점 차이)는 0으로
+  float volts = (sum / 8.0) * 5.0 / 1023.0;
+  float kpa = (volts - 0.483) * 250.0;
+  if (kpa < 0) kpa = 0;
   return kpa;
 }
 
-// 과압: 입구·출구 중 더 높은 압력(maxPressureKpa)으로 판단 — 웹 대시보드 판정과 같은 기준
 bool isLocalDanger(float inFlowLpm, float outFlowLpm, float maxPressureKpa) {
   // 물이 흐르는 중일 때만 유량 감소를 수격으로 판단 (정지 상태 오탐 방지)
   bool waterHammer = false;
@@ -173,26 +142,15 @@ bool isLocalDanger(float inFlowLpm, float outFlowLpm, float maxPressureKpa) {
 }
 
 // String 없이 바로 출력 (SRAM 절약). Serial, BTSerial 모두 Print를 상속
-// 출력 예: {"inTemp":34.38,"outTemp":24.87,"inFlow":9.80,"outFlow":9.65,"inPressure":42.5,"outPressure":38.1,"inPressureV":0.653,"outPressureV":0.635}
 void printJson(Print &out, float inTemp, float outTemp,
                float inFlow, float outFlow,
-               float inPressure, float outPressure,
-               float inPressureV, float outPressureV) {
+               const float *pressure) {
   out.print(F("{\"inTemp\":"));    out.print(inTemp, 2);
   out.print(F(",\"outTemp\":"));   out.print(outTemp, 2);
   out.print(F(",\"inFlow\":"));    out.print(inFlow, 2);
   out.print(F(",\"outFlow\":"));   out.print(outFlow, 2);
-  if (LEGACY_JSON_KEYS) {
-    out.print(F(",\"pressure\":"));    out.print(inPressure, 1);
-    out.print(F(",\"pressure2\":"));   out.print(outPressure, 1);
-  } else {
-    out.print(F(",\"inPressure\":"));  out.print(inPressure, 1);
-    out.print(F(",\"outPressure\":")); out.print(outPressure, 1);
-  }
-  if (PRINT_PRESSURE_VOLTAGE) {
-    out.print(F(",\"inPressureV\":"));  out.print(inPressureV, 3);
-    out.print(F(",\"outPressureV\":")); out.print(outPressureV, 3);
-  }
+  out.print(F(",\"pressure\":"));  out.print(pressure[0], 1);
+  out.print(F(",\"pressure2\":")); out.print(pressure[1], 1);
   out.println(F("}"));
 }
 
@@ -232,11 +190,12 @@ void loop() {
   sensorsIn.requestTemperatures();
   sensorsOut.requestTemperatures();
 
-  float inPressureV = readPressureVolts(PIN_PRESSURE_IN);    // A1: 입구 압력센서 전압
-  float outPressureV = readPressureVolts(PIN_PRESSURE_OUT);  // A2: 출구 압력센서 전압
-  float inPressure = voltsToKpa(inPressureV, PRESSURE_IN_V_ZERO);
-  float outPressure = voltsToKpa(outPressureV, PRESSURE_OUT_V_ZERO);
-  float maxPressure = max(inPressure, outPressure);
+  float pressure[PRESSURE_COUNT];
+  float maxPressure = 0.0;
+  for (int i = 0; i < PRESSURE_COUNT; i++) {
+    pressure[i] = readPressureKpa(PIN_PRESSURE[i]);
+    if (pressure[i] > maxPressure) maxPressure = pressure[i];
+  }
 
   // 로컬 부저 경보 및 서보 밸브 작동
   bool danger = isLocalDanger(inFlow, outFlow, maxPressure);
@@ -246,8 +205,8 @@ void loop() {
     valveServo.write(danger ? SERVO_CLOSED_ANGLE : SERVO_OPEN_ANGLE);
   }
 
-  printJson(Serial, lastInTemp, lastOutTemp, inFlow, outFlow, inPressure, outPressure, inPressureV, outPressureV);   // USB -> 중계 앱
+  printJson(Serial, lastInTemp, lastOutTemp, inFlow, outFlow, pressure);   // USB -> 중계 앱
   if (ENABLE_BLUETOOTH_OUTPUT) {
-    printJson(BTSerial, lastInTemp, lastOutTemp, inFlow, outFlow, inPressure, outPressure, inPressureV, outPressureV); // 블루투스 -> 중계 앱
+    printJson(BTSerial, lastInTemp, lastOutTemp, inFlow, outFlow, pressure); // 블루투스 -> 중계 앱
   }
 }
